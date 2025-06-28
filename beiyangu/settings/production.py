@@ -7,7 +7,7 @@ DATABASES = {
 }
 
 ALLOWED_HOSTS = [
-    'https://beiyangu.up.railway.app',
+    'beiyangu.up.railway.app',
     
 ]
 
