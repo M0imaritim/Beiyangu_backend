@@ -7,8 +7,8 @@ DATABASES = {
 }
 
 ALLOWED_HOSTS = [
-    '.railway.app',
-    os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),
+    'https://beiyangu.up.railway.app',
+    
 ]
 
 CORS_ALLOWED_ORIGINS = [
