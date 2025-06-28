@@ -1,4 +1,5 @@
 from .base import *
+import os
 import dj_database_url
 
 DEBUG = False
@@ -19,6 +20,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_SECONDS = 86400
