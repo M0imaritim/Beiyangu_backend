@@ -23,8 +23,5 @@ COPY . .
 
 ENV DJANGO_SETTINGS_MODULE=beiyangu.settings.production
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
-
 # Run the application
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "beiyangu.wsgi:application"]
