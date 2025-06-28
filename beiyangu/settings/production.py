@@ -1,21 +1,16 @@
 from .base import *
 import dj_database_url
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-
-# Parse Railway's DATABASE_URL
 DATABASES = {
     'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
 }
 
-# Railway deployment settings
 ALLOWED_HOSTS = [
     '.railway.app',
     os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),
 ]
 
-# Add your frontend domain to allowed hosts
 CORS_ALLOWED_ORIGINS = [
     os.getenv('FRONTEND_URL', 'https://your-frontend-domain.vercel.app'),
 ]
