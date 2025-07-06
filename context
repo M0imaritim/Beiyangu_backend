@@ -1,0 +1,423 @@
+# 🏗️ Beiyangu Master Context - Complete Development Guide
+
+## 📌 PROJECT OVERVIEW
+
+**Beiyangu** (Swahili: "My Price") - Reverse marketplace where buyers post requests, sellers bid, funds are held in simulated escrow until delivery completion.
+
+**Timeline**: 7 days to MVP
+**Current Status**: Planning phase - Ready to start Day 1
+**Goal**: Production-ready marketplace demonstrating backend mastery
+
+---
+
+## 🎯 CORE BUSINESS LOGIC
+
+**Happy Path Flow**:
+
+1. User registers/logs in
+2. Buyer creates request + budget → escrow locks funds (simulated)
+3. Sellers browse requests → submit bids
+4. Buyer accepts one bid → request status = "accepted"
+5. Seller marks "delivered" → buyer reviews
+6. Buyer releases funds → escrow updated → transaction complete
+
+**User Roles**: Dynamic (users can be both buyers/sellers based on context)
+
+---
+
+## 🏛️ TECHNICAL ARCHITECTURE
+
+### Backend Stack
+
+- **Framework**: Django + Django REST Framework
+- **Database**: PostgreSQL
+- **Auth**: JWT (djangorestframework-simplejwt) + httpOnly cookies
+- **Deployment**: Railway
+
+### Frontend Stack
+
+- **Framework**: Next.js + TypeScript
+- **Styling**: TailwindCSS
+- **Deployment**: Vercel
+
+### Project Structure
+
+```
+beiyangu-backend/
+├── beiyangu/                 # Settings
+├── apps/
+│   ├── users/               # Auth & profiles
+│   ├── requests/            # Buyer requests
+│   ├── bids/                # Seller bids
+│   └── escrow/              # Fund management
+├── core/                    # Shared utilities
+└── requirements.txt
+
+beiyangu-frontend/
+├── pages/
+│   ├── auth/                # Login/register
+│   ├── requests/            # Request CRUD
+│   └── dashboard/           # User dashboards
+├── components/              # Reusable UI
+├── services/                # API calls
+└── hooks/                   # Auth & state
+```
+
+---
+
+## 📊 DATA MODELS
+
+### User Model
+
+```python
+class User(AbstractUser):
+    bio = models.TextField(blank=True)
+    location = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+```
+
+### Request Model
+
+```python
+class Request(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('accepted', 'Accepted'),
+        ('delivered', 'Delivered'),
+        ('completed', 'Completed'),
+        ('disputed', 'Disputed'),
+    ]
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    budget = models.DecimalField(max_digits=10, decimal_places=2)
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+```
+
+### Bid Model
+
+```python
+class Bid(models.Model):
+    request = models.ForeignKey(Request, on_delete=models.CASCADE, related_name='bids')
+    seller = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    message = models.TextField()
+    is_accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['request', 'seller']  # One bid per seller per request
+```
+
+### EscrowTransaction Model
+
+```python
+class EscrowTransaction(models.Model):
+    STATUS_CHOICES = [
+        ('locked', 'Locked'),
+        ('released', 'Released'),
+        ('held', 'Held for Dispute'),
+    ]
+    request = models.OneToOneField(Request, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='locked')
+    created_at = models.DateTimeField(auto_now_add=True)
+    released_at = models.DateTimeField(null=True, blank=True)
+```
+
+---
+
+## 🛣️ API ENDPOINTS
+
+### Authentication
+
+```
+POST /api/auth/register/          # User registration
+POST /api/auth/login/             # Login (returns JWT in httpOnly cookie)
+POST /api/auth/refresh/           # Refresh JWT token
+POST /api/auth/logout/            # Logout (clear cookies)
+GET  /api/auth/me/                # Get current user info
+```
+
+### Requests
+
+```
+GET    /api/requests/             # List all open requests (with pagination)
+POST   /api/requests/             # Create new request (buyer only)
+GET    /api/requests/{id}/        # Get request details + bids
+PUT    /api/requests/{id}/        # Update request (owner only)
+DELETE /api/requests/{id}/        # Delete request (owner only, if no bids)
+POST   /api/requests/{id}/deliver/ # Mark as delivered (accepted seller only)
+POST   /api/requests/{id}/release/ # Release funds (buyer only)
+```
+
+### Bids
+
+```
+GET    /api/bids/                 # List user's bids
+POST   /api/requests/{id}/bids/   # Submit bid on request
+PUT    /api/bids/{id}/            # Update bid (owner only, if not accepted)
+DELETE /api/bids/{id}/            # Delete bid (owner only, if not accepted)
+POST   /api/bids/{id}/accept/     # Accept bid (request owner only)
+```
+
+### Dashboard
+
+```
+GET /api/dashboard/buyer/         # Buyer's requests + received bids
+GET /api/dashboard/seller/        # Seller's bids + available requests
+```
+
+---
+
+## 📅 7-DAY DEVELOPMENT ROADMAP
+
+### **Day 1: Foundation & Auth** ✅
+
+**Backend (4-5h):**
+
+- Django project setup + apps structure
+- User model + JWT auth endpoints
+- Database setup + migrations
+- Test auth with Postman
+
+**Frontend (3-4h):**
+
+- Next.js + TypeScript + TailwindCSS setup
+- Auth pages (login/register)
+- Auth context + API service layer
+- Protected route wrapper
+
+**✅ Success Criteria**: User can register, login, and access protected pages
+
+---
+
+### **Day 2: Core Models & Request System**
+
+**Backend (4-5h):**
+
+- Request, Bid, EscrowTransaction models
+- Request CRUD endpoints + serializers
+- Pagination + filtering
+- Permission classes
+
+**Frontend (3-4h):**
+
+- Request listing page
+- Request creation form
+- Request detail page
+- API integration
+
+**✅ Success Criteria**: Users can create, view, and list requests
+
+---
+
+### **Day 3: Bidding System**
+
+**Backend (4-5h):**
+
+- Bid creation + validation
+- Bid acceptance logic
+- Escrow status updates
+- Business logic for request status changes
+
+**Frontend (3-4h):**
+
+- Bid submission form
+- Bid listing components
+- Bid acceptance interface
+- Status indicators
+
+**✅ Success Criteria**: Complete request → bid → accept workflow
+
+---
+
+### **Day 4: Order Fulfillment & Dashboards**
+
+**Backend (3-4h):**
+
+- Delivery confirmation endpoint
+- Fund release logic
+- Dashboard data aggregation
+- User role context
+
+**Frontend (4-5h):**
+
+- Buyer dashboard (my requests, received bids)
+- Seller dashboard (available requests, my bids)
+- Order status tracking
+- Fund release interface
+
+**✅ Success Criteria**: Complete end-to-end order flow
+
+---
+
+### **Day 5: Polish & Error Handling**
+
+**Backend (3-4h):**
+
+- Comprehensive error handling
+- Input validation
+- API documentation
+- Basic admin interface
+
+**Frontend (4-5h):**
+
+- UI/UX improvements
+- Loading states + error boundaries
+- Responsive design
+- Form validation
+
+**✅ Success Criteria**: Production-quality user experience
+
+---
+
+### **Day 6: Testing & Deployment**
+
+**Backend (3-4h):**
+
+- API endpoint tests
+- Railway deployment setup
+- Production settings
+- Database migration
+
+**Frontend (3-4h):**
+
+- End-to-end testing
+- Vercel deployment
+- Environment configuration
+- Cross-browser testing
+
+**✅ Success Criteria**: Live, accessible application
+
+---
+
+### **Day 7: Final Polish & Demo**
+
+**Full Day (6-8h):**
+
+- Bug fixes + performance optimization
+- Demo data creation
+- Documentation
+- Demo video/screenshots
+- Final testing
+
+**✅ Success Criteria**: Presentation-ready MVP
+
+---
+
+## 🔧 DEVELOPMENT STANDARDS
+
+### Backend Conventions
+
+- Use DRF ViewSets with proper serializers
+- Implement proper permissions (IsAuthenticated, IsOwnerOrReadOnly)
+- Follow RESTful naming conventions
+- Use timezone-aware datetime fields
+- Validate all user inputs
+- Return consistent error response format
+
+### Frontend Conventions
+
+- Use TypeScript for all components
+- Implement proper error boundaries
+- Use React hooks for state management
+- Follow Next.js file-based routing
+- Implement loading states for all async operations
+- Use TailwindCSS utility classes consistently
+
+### API Response Format
+
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Operation successful"
+}
+
+// Error format
+{
+  "success": false,
+  "error": "Error message",
+  "details": {...}
+}
+```
+
+---
+
+## 🚨 CRITICAL SUCCESS FACTORS
+
+### Time Management
+
+- **Max 8 hours per day** - avoid burnout
+- **Daily checkpoint at end of each day**
+- **Stick to MVP scope** - resist feature creep
+- **Test incrementally** - don't accumulate bugs
+
+### Technical Risk Mitigation
+
+- **Day 3 Checkpoint**: Core flow must be working
+- **Day 5 Checkpoint**: End-to-end journey complete
+- **Use Django admin** for quick admin interface
+- **Keep database schema simple**
+
+### Deployment Preparation
+
+- **Environment variables properly configured**
+- **CORS settings for cross-origin requests**
+- **Database connection strings**
+- **Static file serving setup**
+
+---
+
+## 📋 CURRENT STATUS & NEXT STEPS
+
+**Current Phase**: Planning Complete ✅
+**Next Action**: Begin Day 1 - Backend Setup
+**Immediate Tasks**:
+
+1. Create Django project structure
+2. Set up virtual environment
+3. Configure PostgreSQL
+4. Create User model and auth endpoints
+
+**Context for Resuming**: If conversation is interrupted, we are in the planning phase and ready to start Day 1 implementation. All technical decisions have been made, and the roadmap is locked in.
+
+---
+
+## 🎯 MVP DEFINITION OF DONE
+
+**Core Features (Must-Have)**:
+
+- ✅ User registration and JWT authentication
+- ✅ Request creation and browsing
+- ✅ Bid submission and management
+- ✅ Bid acceptance and order flow
+- ✅ Simulated escrow with fund release
+- ✅ User dashboards (buyer/seller views)
+- ✅ Responsive web interface
+- ✅ Deployed and accessible
+
+**Technical Requirements**:
+
+- ✅ Clean, documented REST API
+- ✅ Proper error handling
+- ✅ Input validation
+- ✅ Authentication & authorization
+- ✅ Database optimization
+- ✅ Cross-browser compatibility
+
+**Stretch Goals (Time Permitting)**:
+
+- Basic commenting system
+- Email notifications
+- Advanced search/filtering
+- User profile pages
+- Basic dispute handling
+
+---
+
+_Last Updated: Day 1 - Foundation & Auth Phase Complete_
+_Begin: Day 2: Core Models & Request System we will focus on the backend first all code must follow pycodestyle and pydocstyle guidelines_

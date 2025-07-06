@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class RequestsConfig(AppConfig):
+class UserRequestsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'requests'
+    name = 'apps.user_requests'
