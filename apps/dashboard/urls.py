@@ -2,10 +2,10 @@
 URL configuration for dashboard endpoints.
 """
 from django.urls import path
-from .views import BuyerDashboardView, SellerDashboardView
+from .views import buyer_dashboard, seller_dashboard
 
 urlpatterns = [
-    path('buyer/', BuyerDashboardView.as_view(), name='buyer-dashboard'),
-    path('seller/', SellerDashboardView.as_view(), name='seller-dashboard'),
+    path('buyer/', buyer_dashboard, name='buyer-dashboard'),
+    path('seller/', seller_dashboard, name='seller-dashboard'),
 ]
 

@@ -39,6 +39,11 @@ class RequestViewSet(ModelViewSet):
     and filtering capabilities.
     """
     
+    # Add the queryset attribute that was missing
+    queryset = Request.objects.select_related('buyer', 'category').annotate(
+        bid_count=Count('bids', filter=Q(bids__is_deleted=False))
+    ).filter(is_deleted=False, is_active=True).order_by('-created_at')
+    
     serializer_class = RequestSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     pagination_class = RequestPagination
@@ -50,9 +55,8 @@ class RequestViewSet(ModelViewSet):
         Returns:
             QuerySet: Filtered and optimized request queryset
         """
-        queryset = Request.objects.select_related('buyer', 'category').annotate(
-            bid_count=Count('bids', filter=Q(bids__is_deleted=False))
-        ).filter(is_deleted=False)
+        # Start with the base queryset
+        queryset = self.queryset
         
         # Filter by status
         status_filter = self.request.query_params.get('status', None)
@@ -85,7 +89,7 @@ class RequestViewSet(ModelViewSet):
             if exclude_own.lower() == 'true':
                 queryset = queryset.exclude(buyer=self.request.user)
         
-        return queryset.filter(is_active=True).order_by('-created_at')
+        return queryset
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""

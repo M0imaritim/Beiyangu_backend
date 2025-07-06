@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 import uuid
 
 User = get_user_model()
@@ -30,7 +31,7 @@ class Bid(models.Model):
         help_text="Public identifier for this bid"
     )
     request = models.ForeignKey(
-        'requests.Request',
+        'user_requests.Request',
         on_delete=models.CASCADE,
         related_name='bids',
         help_text="The request this bid is for"
@@ -155,7 +156,6 @@ class Bid(models.Model):
     @property
     def is_expired(self):
         """Check if this bid has expired."""
-        from django.utils import timezone
         return self.expires_at and self.expires_at <= timezone.now()
     
     @property

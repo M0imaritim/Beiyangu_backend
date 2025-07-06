@@ -46,7 +46,7 @@ class EscrowTransaction(models.Model):
         help_text="Public identifier for this escrow transaction"
     )
     request = models.OneToOneField(
-        'requests.Request',
+        'user_requests.Request',
         on_delete=models.CASCADE,
         related_name='escrow',
         help_text="The request this escrow is for"

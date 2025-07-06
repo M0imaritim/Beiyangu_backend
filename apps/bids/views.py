@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Bid
-from .serializers import BidSerializer, BidDetailSerializer
+from .serializers import BidSerializer, BidCreateUpdateSerializer
 from .permissions import IsBidOwnerOrReadOnly
 from apps.user_requests.models import Request
 
@@ -36,8 +36,8 @@ class BidViewSet(ModelViewSet):
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""
-        if self.action == 'retrieve':
-            return BidDetailSerializer
+        if self.action in ['create', 'update', 'partial_update']:
+            return BidCreateUpdateSerializer
         return BidSerializer
     
     def create(self, request, *args, **kwargs):
@@ -59,7 +59,9 @@ class BidViewSet(ModelViewSet):
                 'error': 'This bid cannot be edited'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial
+        )
         if serializer.is_valid():
             bid = serializer.save()
             bid._current_user = request.user
@@ -69,7 +71,7 @@ class BidViewSet(ModelViewSet):
                 'success': True,
                 'message': 'Bid updated successfully',
                 'data': {
-                    'bid': serializer.data
+                    'bid': BidSerializer(bid).data
                 }
             })
         
@@ -122,6 +124,12 @@ class RequestBidView(generics.ListCreateAPIView):
         request_id = self.kwargs.get('request_id')
         return get_object_or_404(Request, pk=request_id, is_deleted=False)
     
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action."""
+        if self.request.method == 'POST':
+            return BidCreateUpdateSerializer
+        return BidSerializer
+    
     def list(self, request, *args, **kwargs):
         """List all bids for the request."""
         request_obj = self.get_request_object()
@@ -132,7 +140,8 @@ class RequestBidView(generics.ListCreateAPIView):
             not self.get_queryset().filter(seller=user).exists()):
             return Response({
                 'success': False,
-                'error': 'You can only view bids on your own requests or requests you have bid on'
+                'error': ('You can only view bids on your own requests or '
+                         'requests you have bid on')
             }, status=status.HTTP_403_FORBIDDEN)
         
         queryset = self.get_queryset()
@@ -175,9 +184,13 @@ class RequestBidView(generics.ListCreateAPIView):
                 'error': 'You already have a bid on this request'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = self.get_serializer(data=request.data)
+        # Pass request_obj to serializer context
+        serializer = self.get_serializer(
+            data=request.data,
+            context={'request': request, 'request_obj': request_obj}
+        )
         if serializer.is_valid():
-            bid = serializer.save(request=request_obj, seller=request.user)
+            bid = serializer.save()
             bid._current_user = request.user
             bid.save()
             
@@ -185,7 +198,7 @@ class RequestBidView(generics.ListCreateAPIView):
                 'success': True,
                 'message': 'Bid submitted successfully',
                 'data': {
-                    'bid': serializer.data
+                    'bid': BidSerializer(bid).data
                 }
             }, status=status.HTTP_201_CREATED)
         
