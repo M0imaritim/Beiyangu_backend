@@ -16,7 +16,9 @@ from .models import Request, RequestCategory
 from .serializers import (
     RequestSerializer,
     RequestDetailSerializer,
-    RequestCategorySerializer
+    RequestCategorySerializer,
+    RequestCreateSerializer,
+    RequestUpdateSerializer
 )
 from .permissions import IsOwnerOrReadOnly, IsRequestBuyerOrReadOnly
 from apps.bids.models import Bid
@@ -41,7 +43,7 @@ class RequestViewSet(ModelViewSet):
     
     # Add the queryset attribute that was missing
     queryset = Request.objects.select_related('buyer', 'category').annotate(
-        bid_count=Count('bids', filter=Q(bids__is_deleted=False))
+        bid_count_=Count('bids', filter=Q(bids__is_deleted=False))
     ).filter(is_deleted=False, is_active=True).order_by('-created_at')
     
     serializer_class = RequestSerializer
@@ -95,39 +97,50 @@ class RequestViewSet(ModelViewSet):
         """Return appropriate serializer based on action."""
         if self.action == 'retrieve':
             return RequestDetailSerializer
+        elif self.action == 'create':
+            return RequestCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return RequestUpdateSerializer
         return RequestSerializer
     
     def perform_create(self, serializer):
         """Set the buyer to the current user and audit fields."""
-        request_obj = serializer.save(buyer=self.request.user)
-        request_obj._current_user = self.request.user
-        request_obj.save()
+        # Save with the buyer set to current user
+        request_obj = serializer.save(
+            buyer=self.request.user,
+            created_by=self.request.user,
+            updated_by=self.request.user
+        )
+        serializer.validate_escrow(request_obj)
     
     def perform_update(self, serializer):
         """Set audit fields on update."""
-        request_obj = serializer.save()
-        request_obj._current_user = self.request.user
-        request_obj.save()
+        request_obj = serializer.save(updated_by=self.request.user)
     
     def create(self, request, *args, **kwargs):
         """Create a new request."""
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+            
+            # Use the appropriate serializer for response
+            response_serializer = RequestSerializer(serializer.instance)
             
             return Response({
                 'success': True,
                 'message': 'Request created successfully',
                 'data': {
-                    'request': serializer.data
+                    'request': response_serializer.data
                 }
             }, status=status.HTTP_201_CREATED)
-        
-        return Response({
-            'success': False,
-            'error': 'Request creation failed',
-            'details': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': 'Request creation failed',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     def update(self, request, *args, **kwargs):
         """Update a request."""
@@ -141,23 +154,28 @@ class RequestViewSet(ModelViewSet):
                 'error': 'Cannot update request that is not open'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        if serializer.is_valid():
+        try:
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
+            
+            # Use the appropriate serializer for response
+            response_serializer = RequestSerializer(serializer.instance)
             
             return Response({
                 'success': True,
                 'message': 'Request updated successfully',
                 'data': {
-                    'request': serializer.data
+                    'request': response_serializer.data
                 }
             })
-        
-        return Response({
-            'success': False,
-            'error': 'Request update failed',
-            'details': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': 'Request update failed',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
     
     def destroy(self, request, *args, **kwargs):
         """Soft delete a request."""

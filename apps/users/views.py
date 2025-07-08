@@ -40,16 +40,16 @@ def register_view(request):
             tokens['access'],
             max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
             httponly=True,
-            samesite='Lax',
-            secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', False)
+            samesite='None',  # Set to 'None' for cross-site cookies
+            secure=False
         )
         response.set_cookie(
             'refresh_token',
             tokens['refresh'],
             max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
             httponly=True,
-            samesite='Lax',
-            secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', False)
+            samesite='None',  # Set to 'None' for cross-site cookies
+            secure=False
         )
         
         return response
@@ -85,16 +85,16 @@ def login_view(request):
             tokens['access'],
             max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
             httponly=True,
-            samesite='Lax',
-            secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', False)
+            samesite='None',  # Set to 'None' for cross-site cookies
+            secure=True  # Set to True in production if using HTTPS
         )
         response.set_cookie(
             'refresh_token',
             tokens['refresh'],
             max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
             httponly=True,
-            samesite='Lax',
-            secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', False)
+            samesite='None',  # Set to 'None' for cross-site cookies
+            secure=True
         )
         
         return response
@@ -154,7 +154,7 @@ class CustomTokenRefreshView(TokenRefreshView):
                 max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
                 httponly=True,
                 samesite='Lax',
-                secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', False)
+                secure=False
             )
         
         return response

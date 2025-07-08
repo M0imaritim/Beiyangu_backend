@@ -63,6 +63,8 @@ class UserRegistrationTest(APITestCase):
     def test_user_registration_success(self):
         """Test successful user registration"""
         response = self.client.post(self.register_url, self.valid_data)
+        print(response.status_code, response.json())
+
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(response.data['success'])
@@ -346,7 +348,7 @@ class UserSerializerTest(TestCase):
             'email': 'test@example.com',
             'username': 'testuser',
             'password': 'TestPassword123!',
-            
+            'password_confirm': 'TestPassword123!',
             'bio': 'Test bio',
             'location': 'Test Location'
         }
@@ -382,6 +384,8 @@ class UserSerializerTest(TestCase):
         self.assertEqual(serializer.data['location'], user.location)
         self.assertIn('id', serializer.data)
         self.assertIn('created_at', serializer.data)
+        print(serializer.errors)
+
     
     def test_login_serializer_valid(self):
         """Test LoginSerializer with valid data"""

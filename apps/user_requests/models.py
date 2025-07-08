@@ -56,6 +56,7 @@ class Request(models.Model):
         ('delivered', 'Delivered'),
         ('completed', 'Completed'),
         ('disputed', 'Disputed'),
+        ('pending_escrow', 'Pending Escrow'),
         ('cancelled', 'Cancelled'),
     ]
     
@@ -175,18 +176,27 @@ class Request(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to run validation and set audit fields."""
-        self.full_clean()
+        # Remove any invalid kwargs that might be passed
+        kwargs.pop('commit', None)
+        
+        # Run model validation (but catch ValidationError to handle it gracefully)
+        try:
+            self.full_clean()
+        except ValidationError as e:
+            # Only run full_clean if we're not in a migration or bulk operation
+            if not kwargs.get('force_insert', False) and not kwargs.get('force_update', False):
+                raise e
         
         # Set created_by on first save
-        if not self.pk and hasattr(self, '_current_user'):
+        if not self.pk and hasattr(self, '_current_user') and self._current_user:
             self.created_by = self._current_user
         
-        # Always set updated_by
-        if hasattr(self, '_current_user'):
+        # Always set updated_by if user is available
+        if hasattr(self, '_current_user') and self._current_user:
             self.updated_by = self._current_user
         
         super().save(*args, **kwargs)
-    
+        
     @property
     def is_open(self):
         """Check if request is open for bidding."""

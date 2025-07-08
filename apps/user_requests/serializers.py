@@ -10,6 +10,7 @@ from rest_framework import serializers
 from rest_framework.fields import CharField
 
 from .models import Request, RequestCategory
+from apps.escrow.models import EscrowTransaction
 
 
 class RequestCategorySerializer(serializers.ModelSerializer):
@@ -37,7 +38,7 @@ class RequestSerializer(serializers.ModelSerializer):
     buyer_username = serializers.CharField(source='buyer.username', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    bid_count = serializers.IntegerField(read_only=True)
+    bid_count_ = serializers.IntegerField(read_only=True)
     is_expired = serializers.BooleanField(read_only=True)
     can_be_bid_on = serializers.SerializerMethodField()
     time_until_deadline = serializers.SerializerMethodField()
@@ -58,7 +59,7 @@ class RequestSerializer(serializers.ModelSerializer):
             'category',
             'category_name',
             'deadline',
-            'bid_count',
+            'bid_count_',
             'is_expired',
             'can_be_bid_on',
             'time_until_deadline',
@@ -74,12 +75,14 @@ class RequestSerializer(serializers.ModelSerializer):
             'status',
             'status_display',
             'category_name',
-            'bid_count',
+            'bid_count_',
             'is_expired',
             'can_be_bid_on',
             'time_until_deadline',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'created_by',
+            'updated_by'
         ]
     
     def get_can_be_bid_on(self, obj):
@@ -209,6 +212,11 @@ class RequestCreateSerializer(serializers.ModelSerializer):
             'category',
             'deadline'
         ]
+        # Explicitly exclude audit fields from validation
+        extra_kwargs = {
+            'created_by': {'required': False},
+            'updated_by': {'required': False},
+        }
     
     def validate(self, attrs):
         """Perform cross-field validation."""
@@ -230,6 +238,32 @@ class RequestCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Minimum budget is $5.00.")
         
         return value
+    
+    def validate_deadline(self, value):
+        """Validate deadline is in the future."""
+        if value and value <= timezone.now():
+            raise serializers.ValidationError("Deadline must be in the future.")
+        
+        # Optional: Validate deadline is not too far in the future
+        max_deadline = timezone.now() + timezone.timedelta(days=365)
+        if value and value > max_deadline:
+            raise serializers.ValidationError("Deadline cannot be more than 1 year in the future.")
+        
+        return value
+    
+    def validate_title(self, value):
+        """Validate title content."""
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("Title must be at least 5 characters long.")
+        
+        return value.strip()
+    
+    def validate_description(self, value):
+        """Validate description content."""
+        if len(value.strip()) < 20:
+            raise serializers.ValidationError("Description must be at least 20 characters long.")
+        
+        return value.strip()
 
 
 class RequestUpdateSerializer(serializers.ModelSerializer):
@@ -247,6 +281,11 @@ class RequestUpdateSerializer(serializers.ModelSerializer):
             'budget',
             'deadline'
         ]
+        # Explicitly exclude audit fields from validation
+        extra_kwargs = {
+            'created_by': {'required': False},
+            'updated_by': {'required': False},
+        }
     
     def validate(self, attrs):
         """Validate update based on current request status."""
@@ -266,6 +305,57 @@ class RequestUpdateSerializer(serializers.ModelSerializer):
                 })
         
         return attrs
+    
+    def validate_budget(self, value):
+        """Validate budget for updates."""
+        if value <= Decimal('0.00'):
+            raise serializers.ValidationError("Budget must be greater than zero.")
+        
+        # Minimum budget requirement
+        if value < Decimal('5.00'):
+            raise serializers.ValidationError("Minimum budget is $5.00.")
+        
+        return value
+    
+    def validate_deadline(self, value):
+        """Validate deadline is in the future."""
+        if value and value <= timezone.now():
+            raise serializers.ValidationError("Deadline must be in the future.")
+        
+        # Optional: Validate deadline is not too far in the future
+        max_deadline = timezone.now() + timezone.timedelta(days=365)
+        if value and value > max_deadline:
+            raise serializers.ValidationError("Deadline cannot be more than 1 year in the future.")
+        
+        return value
+    
+    def validate_title(self, value):
+        """Validate title content."""
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("Title must be at least 5 characters long.")
+        
+        return value.strip()
+    
+    def validate_description(self, value):
+        """Validate description content."""
+        if len(value.strip()) < 20:
+            raise serializers.ValidationError("Description must be at least 20 characters long.")
+        
+        return value.strip()
+    
+    def create(self, validated_data):
+        # Create the Request
+        request = super().create(validated_data)
+        # Optionally, trigger EscrowTransaction creation here or enforce via API flow
+        return request
+    
+    def validate_escrow(self, instance):
+        # Check if an EscrowTransaction exists for the request
+        if not hasattr(instance, 'escrow') or instance.escrow is None:
+            raise serializers.ValidationError("Request is not valid until funds are escrowed.")
+        if instance.escrow.status != 'pending':
+            raise serializers.ValidationError("Escrow transaction must be in 'pending' status.")
+        return instance
 
 
 class RequestStatusSerializer(serializers.Serializer):

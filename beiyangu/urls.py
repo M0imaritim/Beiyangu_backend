@@ -8,6 +8,7 @@ from rest_framework.routers import DefaultRouter
 # Import app routers
 from apps.user_requests.views import RequestViewSet
 from apps.bids.views import BidViewSet
+from apps.escrow.views import EscrowTransactionViewSet
 
 # Create main router
 router = DefaultRouter()
@@ -27,4 +28,6 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/', include(requests_router.urls)),
     path('api/dashboard/', include('apps.dashboard.urls')),  # Dashboard endpoints
+    path('api/', include('apps.escrow.urls')),  # Escrow endpoints
+    
 ]

@@ -31,7 +31,7 @@ def buyer_dashboard(request):
         buyer=user,
         is_deleted=False
     ).annotate(
-        bid_count=Count('bids', filter=Q(bids__is_deleted=False))
+        total_bids=Count('bids', filter=Q(bids__is_deleted=False))
     ).order_by('-created_at')[:10]
     
     # Get statistics
@@ -43,10 +43,14 @@ def buyer_dashboard(request):
         'completed_requests': Request.objects.filter(
             buyer=user, status='completed', is_deleted=False
         ).count(),
-        'total_spent': Request.objects.filter(
-            buyer=user, status='completed', is_deleted=False
+        'total_spent': Bid.objects.filter(
+            request__buyer=user,
+            request__status='completed',
+            request__is_deleted=False,
+            is_accepted=True,
+            is_deleted=False
         ).aggregate(
-            total=Sum('accepted_bid__amount')
+            total=Sum('amount')
         )['total'] or 0,
     }
     
@@ -114,7 +118,7 @@ def seller_dashboard(request):
         bids__seller=user,
         bids__is_deleted=False
     ).annotate(
-        bid_count=Count('bids', filter=Q(bids__is_deleted=False))
+        total_bids=Count('bids', filter=Q(bids__is_deleted=False))
     ).order_by('-created_at')[:10]
     
     return Response({

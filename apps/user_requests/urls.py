@@ -6,6 +6,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested import routers
 from .views import RequestViewSet
+from apps.bids.views import BidViewSet
 
 # Create a router and register our viewsets
 router = DefaultRouter()
@@ -17,7 +18,7 @@ requests_router = routers.NestedDefaultRouter(
 )
 requests_router.register(
     r'bids', 
-    'apps.bids.views.BidViewSet', 
+    BidViewSet, 
     basename='request-bids'
 )
 

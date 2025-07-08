@@ -80,12 +80,12 @@ class EscrowTransaction(models.Model):
         help_text="Total amount including fees"
     )
     payment_method = models.CharField(
-        max_length=20,
+        max_length=256,
         choices=PAYMENT_METHOD_CHOICES,
         help_text="Payment method used for escrow"
     )
     status = models.CharField(
-        max_length=20,
+        max_length=256,
         choices=STATUS_CHOICES,
         default='pending',
         help_text="Current status of the escrow"
@@ -93,7 +93,7 @@ class EscrowTransaction(models.Model):
     
     # Simulated payment details
     payment_reference = models.CharField(
-        max_length=100,
+        max_length=256,
         blank=True,
         help_text="Simulated payment reference"
     )
