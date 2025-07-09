@@ -81,6 +81,7 @@ class Bid(models.Model):
         User,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,  # Add blank=True to allow empty values during validation
         related_name='created_bids',
         help_text="User who created this record"
     )
@@ -88,6 +89,7 @@ class Bid(models.Model):
         User,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,  # Add blank=True to allow empty values during validation
         related_name='updated_bids',
         help_text="User who last updated this record"
     )
@@ -131,15 +133,15 @@ class Bid(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to run validation and set audit fields."""
-        self.full_clean()
-        
-        # Set created_by on first save
+        # Set audit fields before validation
         if not self.pk and hasattr(self, '_current_user'):
             self.created_by = self._current_user
         
-        # Always set updated_by
         if hasattr(self, '_current_user'):
             self.updated_by = self._current_user
+        
+        # Now run validation
+        self.full_clean()
         
         super().save(*args, **kwargs)
     

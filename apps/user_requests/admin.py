@@ -211,7 +211,7 @@ class RequestAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related(
             'buyer', 'category', 'created_by', 'updated_by'
         ).annotate(
-            bid_count=Count('bids', filter=Q(bids__is_deleted=False))
+            annotated_bid_count=Count('bids', filter=Q(bids__is_deleted=False))
         )
     
     def title_short(self, obj):
@@ -259,7 +259,7 @@ class RequestAdmin(admin.ModelAdmin):
     
     def bid_count_display(self, obj):
         """Return bid count with link to bids."""
-        count = getattr(obj, 'bid_count', 0)
+        count = getattr(obj, 'annotated_bid_count', 0)
         if count > 0:
             # Assuming you have a bids admin or can create a filtered view
             return format_html(
@@ -268,6 +268,7 @@ class RequestAdmin(admin.ModelAdmin):
             )
         return '0 bids'
     bid_count_display.short_description = 'Bids'
+    bid_count_display.admin_order_field = 'annotated_bid_count'
     
     def deadline_display(self, obj):
         """Return formatted deadline with status."""

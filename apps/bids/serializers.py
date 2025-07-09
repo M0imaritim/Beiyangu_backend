@@ -131,4 +131,11 @@ class BidCreateUpdateSerializer(serializers.ModelSerializer):
         """Create a new bid with the current user as seller."""
         validated_data['seller'] = self.context['request'].user
         validated_data['request'] = self.context['request_obj']
-        return super().create(validated_data)
+        
+        bid = Bid(**validated_data)
+        
+        bid._current_user = self.context['request'].user
+        
+        bid.save()
+        
+        return bid

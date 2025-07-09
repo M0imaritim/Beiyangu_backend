@@ -295,7 +295,7 @@ class Request(models.Model):
         
         # Create escrow transaction
         from apps.escrow.models import EscrowTransaction
-        EscrowTransaction.create_for_request(self, bid.amount)
+        EscrowTransaction.create_for_request(self, bid.amount, payment_method='credit_card',)
         
         return True
     
