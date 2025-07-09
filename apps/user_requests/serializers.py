@@ -212,16 +212,12 @@ class RequestCreateSerializer(serializers.ModelSerializer):
             'category',
             'deadline'
         ]
-        # Explicitly exclude audit fields from validation
-        extra_kwargs = {
-            'created_by': {'required': False},
-            'updated_by': {'required': False},
-        }
     
     def validate(self, attrs):
         """Perform cross-field validation."""
         # Ensure category is active if provided
-        if attrs.get('category') and not attrs['category'].is_active:
+        category = attrs.get('category')
+        if category and not category.is_active:
             raise serializers.ValidationError({
                 'category': 'Selected category is not active.'
             })
@@ -237,6 +233,10 @@ class RequestCreateSerializer(serializers.ModelSerializer):
         if value < Decimal('5.00'):
             raise serializers.ValidationError("Minimum budget is $5.00.")
         
+        # Maximum budget check
+        if value > Decimal('1000000.00'):
+            raise serializers.ValidationError("Budget cannot exceed $1,000,000.")
+        
         return value
     
     def validate_deadline(self, value):
@@ -244,7 +244,7 @@ class RequestCreateSerializer(serializers.ModelSerializer):
         if value and value <= timezone.now():
             raise serializers.ValidationError("Deadline must be in the future.")
         
-        # Optional: Validate deadline is not too far in the future
+        # Validate deadline is not too far in the future
         max_deadline = timezone.now() + timezone.timedelta(days=365)
         if value and value > max_deadline:
             raise serializers.ValidationError("Deadline cannot be more than 1 year in the future.")
@@ -253,17 +253,23 @@ class RequestCreateSerializer(serializers.ModelSerializer):
     
     def validate_title(self, value):
         """Validate title content."""
-        if len(value.strip()) < 5:
+        if not value or len(value.strip()) < 5:
             raise serializers.ValidationError("Title must be at least 5 characters long.")
         
         return value.strip()
     
     def validate_description(self, value):
         """Validate description content."""
-        if len(value.strip()) < 20:
+        if not value or len(value.strip()) < 20:
             raise serializers.ValidationError("Description must be at least 20 characters long.")
         
         return value.strip()
+    
+    def create(self, validated_data):
+        """Create a new request with the authenticated user as buyer."""
+        request = self.context['request']
+        validated_data['buyer'] = request.user
+        return super().create(validated_data)
 
 
 class RequestUpdateSerializer(serializers.ModelSerializer):
@@ -281,11 +287,6 @@ class RequestUpdateSerializer(serializers.ModelSerializer):
             'budget',
             'deadline'
         ]
-        # Explicitly exclude audit fields from validation
-        extra_kwargs = {
-            'created_by': {'required': False},
-            'updated_by': {'required': False},
-        }
     
     def validate(self, attrs):
         """Validate update based on current request status."""
@@ -298,7 +299,7 @@ class RequestUpdateSerializer(serializers.ModelSerializer):
             )
         
         # Don't allow budget reduction if there are existing bids
-        if 'budget' in attrs and request_obj.bid_count > 0:
+        if 'budget' in attrs and hasattr(request_obj, 'bid_count') and request_obj.bid_count > 0:
             if attrs['budget'] < request_obj.budget:
                 raise serializers.ValidationError({
                     'budget': 'Cannot reduce budget when there are existing bids.'
@@ -315,6 +316,10 @@ class RequestUpdateSerializer(serializers.ModelSerializer):
         if value < Decimal('5.00'):
             raise serializers.ValidationError("Minimum budget is $5.00.")
         
+        # Maximum budget check
+        if value > Decimal('1000000.00'):
+            raise serializers.ValidationError("Budget cannot exceed $1,000,000.")
+        
         return value
     
     def validate_deadline(self, value):
@@ -322,7 +327,7 @@ class RequestUpdateSerializer(serializers.ModelSerializer):
         if value and value <= timezone.now():
             raise serializers.ValidationError("Deadline must be in the future.")
         
-        # Optional: Validate deadline is not too far in the future
+        # Validate deadline is not too far in the future
         max_deadline = timezone.now() + timezone.timedelta(days=365)
         if value and value > max_deadline:
             raise serializers.ValidationError("Deadline cannot be more than 1 year in the future.")
@@ -331,31 +336,17 @@ class RequestUpdateSerializer(serializers.ModelSerializer):
     
     def validate_title(self, value):
         """Validate title content."""
-        if len(value.strip()) < 5:
+        if not value or len(value.strip()) < 5:
             raise serializers.ValidationError("Title must be at least 5 characters long.")
         
         return value.strip()
     
     def validate_description(self, value):
         """Validate description content."""
-        if len(value.strip()) < 20:
+        if not value or len(value.strip()) < 20:
             raise serializers.ValidationError("Description must be at least 20 characters long.")
         
         return value.strip()
-    
-    def create(self, validated_data):
-        # Create the Request
-        request = super().create(validated_data)
-        # Optionally, trigger EscrowTransaction creation here or enforce via API flow
-        return request
-    
-    def validate_escrow(self, instance):
-        # Check if an EscrowTransaction exists for the request
-        if not hasattr(instance, 'escrow') or instance.escrow is None:
-            raise serializers.ValidationError("Request is not valid until funds are escrowed.")
-        if instance.escrow.status != 'pending':
-            raise serializers.ValidationError("Escrow transaction must be in 'pending' status.")
-        return instance
 
 
 class RequestStatusSerializer(serializers.Serializer):
@@ -370,9 +361,12 @@ class RequestStatusSerializer(serializers.Serializer):
     
     def validate_status(self, value):
         """Validate status transition is allowed."""
-        request_obj = self.context['request_obj']
+        request_obj = self.context.get('request_obj')
         
-        if not request_obj.can_transition_to(value):
+        if not request_obj:
+            raise serializers.ValidationError("Request object not found in context.")
+        
+        if hasattr(request_obj, 'can_transition_to') and not request_obj.can_transition_to(value):
             raise serializers.ValidationError(
                 f"Cannot transition from '{request_obj.status}' to '{value}'"
             )

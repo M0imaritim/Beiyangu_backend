@@ -2,6 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Request
 from .serializers import RequestCreateSerializer
+from rest_framework.exceptions import ValidationError
 
 @receiver(post_save, sender=Request)
 def validate_escrow(sender, instance, created, **kwargs):

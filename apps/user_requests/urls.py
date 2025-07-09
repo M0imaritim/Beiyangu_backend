@@ -1,11 +1,10 @@
-# apps/requests/urls.py
 """
 URL configuration for requests app.
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested import routers
-from .views import RequestViewSet
+from .views import RequestViewSet, RequestCategoryListView
 from apps.bids.views import BidViewSet
 
 # Create a router and register our viewsets
@@ -25,4 +24,6 @@ requests_router.register(
 urlpatterns = [
     path('api/', include(router.urls)),
     path('api/', include(requests_router.urls)),
+    # Add the categories endpoint
+    path('api/categories/', RequestCategoryListView.as_view(), name='request-categories'),
 ]

@@ -24,10 +24,10 @@ requests_router.register(r'bids', BidViewSet, basename='request-bids')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('apps.users.urls')),  # Auth endpoints
+    path('api/auth/', include('apps.users.urls')),
     path('api/', include(router.urls)),
     path('api/', include(requests_router.urls)),
-    path('api/dashboard/', include('apps.dashboard.urls')),  # Dashboard endpoints
-    path('api/', include('apps.escrow.urls')),  # Escrow endpoints
-    
+    path('api/dashboard/', include('apps.dashboard.urls')),
+    path('api/', include('apps.escrow.urls')),
+    path('', include('apps.user_requests.urls')),
 ]

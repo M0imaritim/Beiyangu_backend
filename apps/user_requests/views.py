@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import ValidationError
 
 from .models import Request, RequestCategory
 from .serializers import (
@@ -106,27 +107,27 @@ class RequestViewSet(ModelViewSet):
     def perform_create(self, serializer):
         """Set the buyer to the current user and audit fields."""
         # Save with the buyer set to current user
-        request_obj = serializer.save(
+        serializer.save(
             buyer=self.request.user,
             created_by=self.request.user,
             updated_by=self.request.user
         )
-        serializer.validate_escrow(request_obj)
+        
     
     def perform_update(self, serializer):
         """Set audit fields on update."""
         request_obj = serializer.save(updated_by=self.request.user)
     
+   
+
     def create(self, request, *args, **kwargs):
         """Create a new request."""
+        serializer = self.get_serializer(data=request.data)
         try:
-            serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
-            
-            # Use the appropriate serializer for response
             response_serializer = RequestSerializer(serializer.instance)
-            
+
             return Response({
                 'success': True,
                 'message': 'Request created successfully',
@@ -134,13 +135,21 @@ class RequestViewSet(ModelViewSet):
                     'request': response_serializer.data
                 }
             }, status=status.HTTP_201_CREATED)
-            
+
+        except ValidationError as ve:
+            return Response({
+                'success': False,
+                'error': 'Validation failed',
+                'details': ve.detail  # this gives structured field errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
             return Response({
                 'success': False,
                 'error': 'Request creation failed',
                 'details': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
     
     def update(self, request, *args, **kwargs):
         """Update a request."""
