@@ -6,9 +6,9 @@ from .models import Bid
 @admin.register(Bid)
 class BidAdmin(admin.ModelAdmin):
     """Admin interface for Bid model."""
-    
+
     list_display = [
-        'id', 'request', 'seller', 'amount', 'is_accepted', 
+        'id', 'request', 'seller', 'amount', 'is_accepted',
         'is_deleted', 'created_at'
     ]
     list_filter = ['is_accepted', 'is_deleted', 'created_at']
@@ -17,7 +17,7 @@ class BidAdmin(admin.ModelAdmin):
         'public_id', 'created_at', 'updated_at', 'created_by', 'updated_by'
     ]
     raw_id_fields = ['request', 'seller', 'created_by', 'updated_by']
-    
+
     fieldsets = (
         (None, {
             'fields': ('public_id', 'request', 'seller', 'amount', 'message')
@@ -33,7 +33,7 @@ class BidAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def has_delete_permission(self, request, obj=None):
         """Prevent hard deletion - use soft delete instead."""
         return False

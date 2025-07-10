@@ -13,6 +13,24 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='request',
             name='status',
-            field=models.CharField(choices=[('open', 'Open'), ('accepted', 'Accepted'), ('delivered', 'Delivered'), ('completed', 'Completed'), ('disputed', 'Disputed'), ('pending_escrow', 'Pending Escrow'), ('cancelled', 'Cancelled')], default='open', help_text='Current status of the request', max_length=20),
+            field=models.CharField(
+                choices=[
+                    ('open',
+                     'Open'),
+                    ('accepted',
+                     'Accepted'),
+                    ('delivered',
+                     'Delivered'),
+                    ('completed',
+                     'Completed'),
+                    ('disputed',
+                     'Disputed'),
+                    ('pending_escrow',
+                     'Pending Escrow'),
+                    ('cancelled',
+                     'Cancelled')],
+                default='open',
+                help_text='Current status of the request',
+                max_length=20),
         ),
     ]

@@ -16,11 +16,23 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='bid',
             name='created_by',
-            field=models.ForeignKey(blank=True, help_text='User who created this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_bids', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(
+                blank=True,
+                help_text='User who created this record',
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='created_bids',
+                to=settings.AUTH_USER_MODEL),
         ),
         migrations.AlterField(
             model_name='bid',
             name='updated_by',
-            field=models.ForeignKey(blank=True, help_text='User who last updated this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='updated_bids', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(
+                blank=True,
+                help_text='User who last updated this record',
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='updated_bids',
+                to=settings.AUTH_USER_MODEL),
         ),
     ]

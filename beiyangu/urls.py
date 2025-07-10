@@ -19,12 +19,18 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('apps.users.urls')),
     path('api/', include(router.urls)),
-    
+
     # Request-specific bid endpoints (using the RequestBidView)
-    path('api/requests/<int:request_id>/bids/', RequestBidView.as_view(), name='request-bids'),    
+    path(
+        'api/requests/<int:request_id>/bids/',
+        RequestBidView.as_view(),
+        name='request-bids'),
     # Bid acceptance endpoint
-    path('api/bids/<int:pk>/accept/', BidAcceptView.as_view(), name='bid-accept'),    
+    path(
+        'api/bids/<int:pk>/accept/',
+        BidAcceptView.as_view(),
+        name='bid-accept'),
     path('api/dashboard/', include('apps.dashboard.urls')),
-    path('api/', include('apps.escrow.urls')),
+    path('api/escrow/', include('apps.escrow.urls')),
     path('', include('apps.user_requests.urls')),
 ]

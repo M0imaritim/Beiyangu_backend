@@ -1,6 +1,16 @@
-from pathlib import Path
-from datetime import timedelta
+"""Base Django settings for beiyangu project.
+
+This module contains the base configuration settings that are shared
+across all environments (development, production, testing).
+"""
+
 import os
+import sys
+from datetime import timedelta
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -31,7 +41,6 @@ LOCAL_APPS = [
     'apps.bids',
     'apps.escrow',
     'apps.dashboard',
-    
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -74,16 +83,20 @@ AUTH_USER_MODEL = 'users.User'
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'MinimumLengthValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'CommonPasswordValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'NumericPasswordValidator',
     },
 ]
 
@@ -96,7 +109,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
@@ -144,36 +156,25 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_SECURE': False,
     'AUTH_COOKIE_HTTP_ONLY': True,
     'AUTH_COOKIE_PATH': '/',
-    'AUTH_COOKIE_SAMESITE': 'None',  # Set to 'None' for cross-site cookies
+    'AUTH_COOKIE_SAMESITE': 'None',
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-# This is the crucial setting that allows cookies to be sent
+# CORS Settings (base configuration)
 CORS_ALLOW_CREDENTIALS = True
 
-# Also add your frontend to trusted origins for CSRF
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
 
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-CSRF_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+def _is_test_mode():
+    """Check if Django is running in test mode.
+    
+    Returns:
+        bool: True if running tests, False otherwise.
+    """
+    test_commands = ['test', 'test_coverage']
+    return any(arg in sys.argv for arg in test_commands) or 'test' in sys.argv
 
 
-import sys
-
-print(f"Command line args: {sys.argv}")
-
-if any(arg in sys.argv for arg in ['test', 'test_coverage']) or 'test' in sys.argv:
+# Test database configuration
+if _is_test_mode():
     print("DETECTED TEST MODE - Using SQLite")
     DATABASES = {
         'default': {
@@ -182,6 +183,7 @@ if any(arg in sys.argv for arg in ['test', 'test_coverage']) or 'test' in sys.ar
         }
     }
     
+    # Fast password hashing for tests
     PASSWORD_HASHERS = [
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]

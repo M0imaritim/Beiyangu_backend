@@ -21,20 +21,87 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='EscrowTransaction',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('public_id', models.UUIDField(default=uuid.uuid4, editable=False, help_text='Public identifier for this escrow transaction', unique=True)),
-                ('amount', models.DecimalField(decimal_places=2, help_text='Amount locked in escrow', max_digits=10, validators=[django.core.validators.MinValueValidator(Decimal('0.01'))])),
-                ('status', models.CharField(choices=[('locked', 'Locked'), ('released', 'Released'), ('held', 'Held for Dispute'), ('refunded', 'Refunded')], default='locked', help_text='Current status of the escrow', max_length=20)),
-                ('locked_at', models.DateTimeField(auto_now_add=True, help_text='When funds were locked in escrow')),
-                ('released_at', models.DateTimeField(blank=True, help_text='When funds were released from escrow', null=True)),
-                ('notes', models.TextField(blank=True, help_text='Additional notes about this escrow transaction')),
-                ('created_by', models.ForeignKey(help_text='User who created this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_escrows', to=settings.AUTH_USER_MODEL)),
-                ('request', models.OneToOneField(help_text='The request this escrow is for', on_delete=django.db.models.deletion.CASCADE, related_name='escrow', to='user_requests.request')),
-                ('updated_by', models.ForeignKey(help_text='User who last updated this record', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='updated_escrows', to=settings.AUTH_USER_MODEL)),
+                ('id',
+                 models.BigAutoField(
+                     auto_created=True,
+                     primary_key=True,
+                     serialize=False,
+                     verbose_name='ID')),
+                ('public_id',
+                 models.UUIDField(
+                     default=uuid.uuid4,
+                     editable=False,
+                     help_text='Public identifier for this escrow transaction',
+                     unique=True)),
+                ('amount',
+                 models.DecimalField(
+                     decimal_places=2,
+                     help_text='Amount locked in escrow',
+                     max_digits=10,
+                     validators=[
+                         django.core.validators.MinValueValidator(
+                             Decimal('0.01'))])),
+                ('status',
+                 models.CharField(
+                     choices=[
+                         ('locked',
+                          'Locked'),
+                         ('released',
+                          'Released'),
+                         ('held',
+                          'Held for Dispute'),
+                         ('refunded',
+                          'Refunded')],
+                     default='locked',
+                     help_text='Current status of the escrow',
+                     max_length=20)),
+                ('locked_at',
+                 models.DateTimeField(
+                     auto_now_add=True,
+                     help_text='When funds were locked in escrow')),
+                ('released_at',
+                 models.DateTimeField(
+                     blank=True,
+                     help_text='When funds were released from escrow',
+                     null=True)),
+                ('notes',
+                 models.TextField(
+                     blank=True,
+                     help_text='Additional notes about this\
+                        escrow transaction')),
+                ('created_by',
+                 models.ForeignKey(
+                     help_text='User who created this record',
+                     null=True,
+                     on_delete=django.db.models.deletion.SET_NULL,
+                     related_name='created_escrows',
+                     to=settings.AUTH_USER_MODEL)),
+                ('request',
+                 models.OneToOneField(
+                     help_text='The request this escrow is for',
+                     on_delete=django.db.models.deletion.CASCADE,
+                     related_name='escrow',
+                     to='user_requests.request')),
+                ('updated_by',
+                 models.ForeignKey(
+                     help_text='User who last updated this record',
+                     null=True,
+                     on_delete=django.db.models.deletion.SET_NULL,
+                     related_name='updated_escrows',
+                     to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ['-locked_at'],
-                'indexes': [models.Index(fields=['status'], name='escrow_escr_status_9ea6b9_idx'), models.Index(fields=['locked_at'], name='escrow_escr_locked__344447_idx'), models.Index(fields=['public_id'], name='escrow_escr_public__050293_idx')],
+                'indexes': [
+                    models.Index(
+                        fields=['status'],
+                        name='escrow_escr_status_9ea6b9_idx'),
+                    models.Index(
+                        fields=['locked_at'],
+                        name='escrow_escr_locked__344447_idx'),
+                    models.Index(
+                        fields=['public_id'],
+                        name='escrow_escr_public__050293_idx')],
             },
         ),
     ]

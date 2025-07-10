@@ -8,7 +8,16 @@ router = DefaultRouter()
 router.register(r'bids', BidViewSet, basename='bids')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
-    path('api/bids/<int:pk>/accept/', BidAcceptView.as_view(), name='bid-accept'),
-    path('api/requests/<int:request_id>/bids/', RequestBidView.as_view(), name='request-bids'),
+    path(
+        'api/',
+        include(
+            router.urls)),
+    path(
+        'api/bids/<int:pk>/accept/',
+        BidAcceptView.as_view(),
+        name='bid-accept'),
+    path(
+        'api/requests/<int:request_id>/bids/',
+        RequestBidView.as_view(),
+        name='request-bids'),
 ]

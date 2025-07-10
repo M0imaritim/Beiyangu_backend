@@ -17,7 +17,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='escrowtransaction',
-            options={'ordering': ['-created_at']},
+            options={
+                'ordering': ['-created_at']},
         ),
         migrations.RemoveIndex(
             model_name='escrowtransaction',
@@ -26,52 +27,104 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='escrowtransaction',
             name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now, help_text='When escrow was created'),
+            field=models.DateTimeField(
+                auto_now_add=True,
+                default=django.utils.timezone.now,
+                help_text='When escrow was created'),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='escrowtransaction',
             name='escrow_fee',
-            field=models.DecimalField(decimal_places=2, default=Decimal('0.00'), help_text='Escrow service fee', max_digits=10),
+            field=models.DecimalField(
+                decimal_places=2,
+                default=Decimal('0.00'),
+                help_text='Escrow service fee',
+                max_digits=10),
         ),
         migrations.AddField(
             model_name='escrowtransaction',
             name='payment_method',
-            field=models.CharField(choices=[('credit_card', 'Credit Card'), ('debit_card', 'Debit Card'), ('bank_transfer', 'Bank Transfer'), ('paypal', 'PayPal')], default=django.utils.timezone.now, help_text='Payment method used for escrow', max_length=256),
+            field=models.CharField(
+                choices=[
+                    ('credit_card',
+                     'Credit Card'),
+                    ('debit_card',
+                     'Debit Card'),
+                    ('bank_transfer',
+                     'Bank Transfer'),
+                    ('paypal',
+                     'PayPal')],
+                default=django.utils.timezone.now,
+                help_text='Payment method used for escrow',
+                max_length=256),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='escrowtransaction',
             name='payment_processor',
-            field=models.CharField(default='stripe_simulation', help_text='Simulated payment processor', max_length=50),
+            field=models.CharField(
+                default='stripe_simulation',
+                help_text='Simulated payment processor',
+                max_length=50),
         ),
         migrations.AddField(
             model_name='escrowtransaction',
             name='payment_reference',
-            field=models.CharField(blank=True, help_text='Simulated payment reference', max_length=256),
+            field=models.CharField(
+                blank=True,
+                help_text='Simulated payment reference',
+                max_length=256),
         ),
         migrations.AddField(
             model_name='escrowtransaction',
             name='total_amount',
-            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Total amount including fees', max_digits=10),
+            field=models.DecimalField(
+                decimal_places=2,
+                default=0.0,
+                help_text='Total amount including fees',
+                max_digits=10),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='escrowtransaction',
             name='locked_at',
-            field=models.DateTimeField(blank=True, help_text='When funds were locked in escrow', null=True),
+            field=models.DateTimeField(
+                blank=True,
+                help_text='When funds were locked in escrow',
+                null=True),
         ),
         migrations.AlterField(
             model_name='escrowtransaction',
             name='status',
-            field=models.CharField(choices=[('pending', 'Pending Setup'), ('locked', 'Locked'), ('released', 'Released'), ('held', 'Held for Dispute'), ('refunded', 'Refunded'), ('failed', 'Failed')], default='pending', help_text='Current status of the escrow', max_length=256),
+            field=models.CharField(
+                choices=[
+                    ('pending',
+                     'Pending Setup'),
+                    ('locked',
+                     'Locked'),
+                    ('released',
+                     'Released'),
+                    ('held',
+                     'Held for Dispute'),
+                    ('refunded',
+                     'Refunded'),
+                    ('failed',
+                     'Failed')],
+                default='pending',
+                help_text='Current status of the escrow',
+                max_length=256),
         ),
         migrations.AddIndex(
             model_name='escrowtransaction',
-            index=models.Index(fields=['created_at'], name='escrow_escr_created_aba3a4_idx'),
+            index=models.Index(
+                fields=['created_at'],
+                name='escrow_escr_created_aba3a4_idx'),
         ),
         migrations.AddIndex(
             model_name='escrowtransaction',
-            index=models.Index(fields=['payment_reference'], name='escrow_escr_payment_514886_idx'),
+            index=models.Index(
+                fields=['payment_reference'],
+                name='escrow_escr_payment_514886_idx'),
         ),
     ]

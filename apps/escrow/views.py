@@ -1,6 +1,4 @@
-"""
-Escrow views with proper payment method handling and cURL support.
-"""
+"""Escrow views with proper payment method handling and cURL support."""
 from rest_framework import viewsets, serializers, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -17,8 +15,10 @@ from apps.bids.models import Bid
 class EscrowTransactionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for escrow transactions.
+
     Supports CRUD operations and escrow management.
     """
+
     queryset = EscrowTransaction.objects.all()
     serializer_class = EscrowTransactionSerializer
     permission_classes = [IsAuthenticated]
@@ -28,15 +28,19 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
         """Filter escrow transactions by user."""
         user = self.request.user
         return EscrowTransaction.objects.filter(
-            models.Q(request__buyer=user) | 
-            models.Q(bid__seller=user)
-        ).select_related('request', 'bid', 'request__buyer', 'bid__seller').distinct()
+            models.Q(
+                request__buyer=user) | models.Q(
+                bid__seller=user)).select_related(
+            'request',
+            'bid',
+            'request__buyer',
+            'bid__seller').distinct()
 
     @action(detail=False, methods=['post'])
     def create_for_bid(self, request):
         """
         Create escrow transaction when accepting a bid.
-        
+
         POST /api/escrow/create_for_bid/
         {
             "bid_id": 123,
@@ -50,13 +54,13 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
         bid_id = request.data.get('bid_id')
         payment_method = request.data.get('payment_method', 'credit_card')
         payment_details = request.data.get('payment_details', {})
-        
+
         if not bid_id:
             return Response({
                 'success': False,
                 'error': 'bid_id is required'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             bid = Bid.objects.select_related('request').get(id=bid_id)
         except Bid.DoesNotExist:
@@ -64,36 +68,39 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                 'success': False,
                 'error': 'Bid not found'
             }, status=status.HTTP_404_NOT_FOUND)
-        
+
         # Check if user is the request buyer
         if bid.request.buyer != request.user:
             return Response({
                 'success': False,
                 'error': 'Only the request buyer can create escrow'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         # Check if bid can be accepted
         if not bid.can_be_accepted():
             return Response({
                 'success': False,
                 'error': 'Bid cannot be accepted'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Check if escrow already exists
         if hasattr(bid.request, 'escrow'):
             return Response({
                 'success': False,
                 'error': 'Escrow already exists for this request'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Validate payment method
-        valid_methods = [choice[0] for choice in EscrowTransaction.PAYMENT_METHOD_CHOICES]
+        valid_methods = [choice[0]
+                         for choice in EscrowTransaction.
+                         PAYMENT_METHOD_CHOICES]
         if payment_method not in valid_methods:
             return Response({
                 'success': False,
-                'error': f'Invalid payment method. Valid options: {valid_methods}'
+                'error': f'Invalid payment method.\
+                    Valid options: {valid_methods}'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             # Create escrow transaction
             escrow = EscrowTransaction.create_for_bid_acceptance(
@@ -102,25 +109,26 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                 payment_method=payment_method,
                 user=request.user
             )
-            
+
             # Accept the bid
             bid.is_accepted = True
             bid._current_user = request.user
             bid.save()
-            
+
             # Change request status to accepted
             bid.request.change_status('accepted', request.user)
-            
+
             # Process payment
             payment_result = escrow.simulate_payment_processing(
                 user=request.user,
                 payment_details=payment_details
             )
-            
+
             if payment_result['success']:
                 return Response({
                     'success': True,
-                    'message': 'Escrow created and payment processed successfully',
+                    'message': 'Escrow created and\
+                        payment processed successfully',
                     'data': {
                         'escrow': EscrowTransactionSerializer(escrow).data,
                         'payment_result': payment_result
@@ -135,7 +143,7 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                         'payment_result': payment_result
                     }
                 }, status=status.HTTP_400_BAD_REQUEST)
-                
+
         except Exception as e:
             return Response({
                 'success': False,
@@ -146,7 +154,7 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def process_payment(self, request, public_id=None):
         """
         Process payment for pending escrow.
-        
+
         POST /api/escrow/{public_id}/process_payment/
         {
             "payment_method": "paypal",
@@ -156,41 +164,45 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
         }
         """
         escrow = get_object_or_404(EscrowTransaction, public_id=public_id)
-        
+
         # Check permissions
         if request.user != escrow.request.buyer:
             return Response({
                 'success': False,
                 'error': 'Only the buyer can process payment'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         if escrow.status != 'pending' and escrow.status != 'failed':
             return Response({
                 'success': False,
-                'error': f'Cannot process payment for escrow in {escrow.status} status'
+                'error': f'Cannot process payment for\
+                    escrow in {escrow.status} status'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Update payment method if provided
         payment_method = request.data.get('payment_method')
         if payment_method:
-            valid_methods = [choice[0] for choice in EscrowTransaction.PAYMENT_METHOD_CHOICES]
+            valid_methods = [choice[0]
+                             for choice in EscrowTransaction.
+                             PAYMENT_METHOD_CHOICES]
             if payment_method not in valid_methods:
                 return Response({
                     'success': False,
-                    'error': f'Invalid payment method. Valid options: {valid_methods}'
+                    'error': f'Invalid payment method.\
+                        Valid options: {valid_methods}'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             escrow.payment_method = payment_method
             escrow.save()
-        
+
         payment_details = request.data.get('payment_details', {})
-        
+
         # Process payment
         payment_result = escrow.simulate_payment_processing(
             user=request.user,
             payment_details=payment_details
         )
-        
+
         if payment_result['success']:
             return Response({
                 'success': True,
@@ -214,7 +226,7 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def perform_action(self, request, public_id=None):
         """
         Perform escrow action (release, hold, refund).
-        
+
         POST /api/escrow/{public_id}/perform_action/
         {
             "action": "release",
@@ -222,7 +234,7 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
         }
         """
         escrow = get_object_or_404(EscrowTransaction, public_id=public_id)
-        
+
         # Check permissions based on action
         action_type = request.data.get('action')
         if action_type == 'release':
@@ -234,27 +246,29 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_403_FORBIDDEN)
         elif action_type in ['hold', 'refund']:
             # Both buyer and seller can initiate hold/refund
-            if request.user not in [escrow.request.buyer, escrow.bid.seller if escrow.bid else None]:
+            if request.user not in [
+                    escrow.request.buyer,
+                    escrow.bid.seller if escrow.bid else None]:
                 return Response({
                     'success': False,
                     'error': 'Permission denied'
                 }, status=status.HTTP_403_FORBIDDEN)
-        
+
         serializer = EscrowActionSerializer(
             data=request.data,
             context={'escrow': escrow}
         )
-        
+
         if not serializer.is_valid():
             return Response({
                 'success': False,
                 'error': 'Invalid action data',
                 'details': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         action_type = serializer.validated_data['action']
         notes = serializer.validated_data.get('notes', '')
-        
+
         # Perform the action
         if action_type == 'release':
             result = escrow.release_funds(request.user, notes)
@@ -267,7 +281,7 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                 'success': False,
                 'error': 'Invalid action'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         if result['success']:
             return Response({
                 'success': True,
@@ -290,18 +304,20 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def status(self, request, public_id=None):
         """
         Get detailed status of escrow transaction.
-        
+
         GET /api/escrow/{public_id}/status/
         """
         escrow = get_object_or_404(EscrowTransaction, public_id=public_id)
-        
+
         # Check permissions
-        if request.user not in [escrow.request.buyer, escrow.bid.seller if escrow.bid else None]:
+        if request.user not in [
+                escrow.request.buyer,
+                escrow.bid.seller if escrow.bid else None]:
             return Response({
                 'success': False,
                 'error': 'Permission denied'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         return Response({
             'success': True,
             'data': {
@@ -314,21 +330,23 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def payment_methods(self, request):
         """
         Get available payment methods.
-        
+
         GET /api/escrow/payment_methods/
         """
         payment_methods = []
-        
-        for method_code, method_label in EscrowTransaction.PAYMENT_METHOD_CHOICES:
+
+        for method_code, method_label in\
+                EscrowTransaction.PAYMENT_METHOD_CHOICES:
             method_info = {
                 'value': method_code,
                 'label': method_label,
                 'processor': self._get_payment_processor(method_code),
-                'required_fields': self._get_required_payment_fields(method_code),
-                'supported_currencies': self._get_supported_currencies(method_code)
-            }
+                'required_fields':
+                self._get_required_payment_fields(method_code),
+                'supported_currencies':
+                self._get_supported_currencies(method_code)}
             payment_methods.append(method_info)
-        
+
         return Response({
             'success': True,
             'data': {
@@ -352,13 +370,27 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def _get_required_payment_fields(self, method_code):
         """Get required fields for a payment method."""
         field_mapping = {
-            'credit_card': ['card_number', 'expiry_date', 'cvv', 'cardholder_name'],
-            'debit_card': ['card_number', 'expiry_date', 'cvv', 'cardholder_name'],
+            'credit_card': [
+                'card_number',
+                'expiry_date',
+                'cvv',
+                'cardholder_name'],
+            'debit_card': [
+                'card_number',
+                'expiry_date',
+                'cvv',
+                'cardholder_name'],
             'paypal': ['paypal_email'],
-            'bank_transfer': ['account_number', 'routing_number', 'account_holder_name'],
-            'mobile_money': ['mobile_number', 'network_provider'],
-            'cryptocurrency': ['wallet_address', 'crypto_type']
-        }
+            'bank_transfer': [
+                'account_number',
+                'routing_number',
+                'account_holder_name'],
+            'mobile_money': [
+                'mobile_number',
+                'network_provider'],
+            'cryptocurrency': [
+                'wallet_address',
+                'crypto_type']}
         return field_mapping.get(method_code, [])
 
     def _get_supported_currencies(self, method_code):
@@ -377,29 +409,30 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def statistics(self, request):
         """
         Get escrow statistics for the current user.
-        
+
         GET /api/escrow/statistics/
         """
         user = request.user
         queryset = self.get_queryset()
-        
+
         # Calculate statistics
         total_escrows = queryset.count()
         pending_escrows = queryset.filter(status='pending').count()
         funded_escrows = queryset.filter(status='funded').count()
         completed_escrows = queryset.filter(status='completed').count()
         disputed_escrows = queryset.filter(status='disputed').count()
-        
+
         # Calculate totals by user role
         buyer_escrows = queryset.filter(request__buyer=user)
         seller_escrows = queryset.filter(bid__seller=user)
-        
-        # Calculate monetary totals (you may need to adjust based on your currency handling)
+
+        # Calculate monetary totals (you may need to adjust based on your
+        # currency handling)
         from django.db.models import Sum
         total_amount = queryset.aggregate(
             total=Sum('amount')
         )['total'] or 0
-        
+
         return Response({
             'success': True,
             'data': {
@@ -430,22 +463,25 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def history(self, request, public_id=None):
         """
         Get detailed history of escrow transaction.
-        
+
         GET /api/escrow/{public_id}/history/
         """
         escrow = get_object_or_404(EscrowTransaction, public_id=public_id)
-        
+
         # Check permissions
-        if request.user not in [escrow.request.buyer, escrow.bid.seller if escrow.bid else None]:
+        if request.user not in [
+                escrow.request.buyer,
+                escrow.bid.seller if escrow.bid else None]:
             return Response({
                 'success': False,
                 'error': 'Permission denied'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         # Get all related history/logs if you have a logging model
-        # This is a placeholder - you would implement based on your logging system
+        # This is a placeholder - you would implement based on your logging
+        # system
         history_entries = []
-        
+
         # Basic history based on escrow model fields
         history_entries.append({
             'event': 'escrow_created',
@@ -456,7 +492,7 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                 'payment_method': escrow.payment_method
             }
         })
-        
+
         if escrow.funded_at:
             history_entries.append({
                 'event': 'escrow_funded',
@@ -464,7 +500,7 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                 'description': 'Escrow funded successfully',
                 'details': {}
             })
-        
+
         if escrow.completed_at:
             history_entries.append({
                 'event': 'escrow_completed',
@@ -472,12 +508,13 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
                 'description': 'Escrow completed and funds released',
                 'details': {}
             })
-        
+
         return Response({
             'success': True,
             'data': {
                 'escrow': EscrowTransactionSerializer(escrow).data,
-                'history': sorted(history_entries, key=lambda x: x['timestamp'])
+                'history': sorted(history_entries,
+                                  key=lambda x: x['timestamp'])
             }
         })
 
@@ -485,45 +522,48 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
     def dispute(self, request, public_id=None):
         """
         Initiate dispute for an escrow transaction.
-        
+
         POST /api/escrow/{public_id}/dispute/
         {
             "reason": "Service not delivered as agreed",
-            "evidence": "Description of evidence or links to supporting documents"
+            "evidence": "Description of evidence "
         }
         """
         escrow = get_object_or_404(EscrowTransaction, public_id=public_id)
-        
+
         # Check permissions - both buyer and seller can initiate disputes
-        if request.user not in [escrow.request.buyer, escrow.bid.seller if escrow.bid else None]:
+        if request.user not in [
+                escrow.request.buyer,
+                escrow.bid.seller if escrow.bid else None]:
             return Response({
                 'success': False,
                 'error': 'Permission denied'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         # Check if dispute can be initiated
         if escrow.status not in ['funded', 'disputed']:
             return Response({
                 'success': False,
-                'error': f'Cannot initiate dispute for escrow in {escrow.status} status'
+                'error': f'Cannot initiate dispute for\
+                    escrow in {escrow.status} status'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         reason = request.data.get('reason', '')
         evidence = request.data.get('evidence', '')
-        
+
         if not reason:
             return Response({
                 'success': False,
                 'error': 'Dispute reason is required'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Create dispute (you would implement this based on your dispute model)
         dispute_result = escrow.create_dispute(
             initiated_by=request.user,
             reason=reason,
             evidence=evidence
         )
-        
+
         if dispute_result['success']:
             return Response({
                 'success': True,
@@ -536,5 +576,6 @@ class EscrowTransactionViewSet(viewsets.ModelViewSet):
         else:
             return Response({
                 'success': False,
-                'error': dispute_result.get('error', 'Failed to initiate dispute')
+                'error': dispute_result.get('error',
+                                            'Failed to initiate dispute')
             }, status=status.HTTP_400_BAD_REQUEST)

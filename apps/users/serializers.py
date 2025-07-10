@@ -3,17 +3,26 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import User
 
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, validators=[validate_password])
+    password = serializers.CharField(
+        write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'password', 'password_confirm', 'bio', 'location')
+        fields = (
+            'email',
+            'username',
+            'password',
+            'password_confirm',
+            'bio',
+            'location')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            raise serializers.ValidationError(
+                {"password": "Password fields didn't match."})
         return attrs
 
     def create(self, validated_data):
@@ -21,11 +30,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'bio', 'location', 'created_at')
         read_only_fields = ('id', 'created_at')
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -37,7 +48,7 @@ class LoginSerializer(serializers.Serializer):
 
         if email and password:
             user = authenticate(request=self.context.get('request'),
-                              username=email, password=password)
+                                username=email, password=password)
             if not user:
                 msg = 'Unable to log in with provided credentials.'
                 raise serializers.ValidationError(msg, code='authorization')
