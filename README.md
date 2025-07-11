@@ -4,9 +4,17 @@
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://python.org/)
 [![Django](https://img.shields.io/badge/django-4.2%2B-green.svg)](https://djangoproject.com/)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-13%2B-blue.svg)](https://postgresql.org/)
+[![Docker](https://img.shields.io/badge/docker-enabled-blue.svg)](https://docker.com/)
+[![Railway](https://img.shields.io/badge/deployed-railway-success.svg)](https://railway.app/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 > **Beiyangu** (Swahili: "My Price") - A robust backend API for a reverse marketplace where buyers post requests, sellers bid, and funds are held in simulated escrow until delivery completion.
+
+## 🌐 Live API
+
+**Production URL**: [https://beiyangu.up.railway.app/](https://beiyangu.up.railway.app/)
+
+**API Documentation**: [https://beiyangu.up.railway.app/api/](https://beiyangu.up.railway.app/api/)
 
 ## 🎯 Project Overview
 
@@ -15,42 +23,46 @@ Beiyangu is a reverse marketplace that flips the traditional e-commerce model. I
 ### Key Features
 
 - 🔄 **Reverse Marketplace**: Buyers post requests, sellers bid
-- 🔐 **JWT Authentication**: Secure authentication with httpOnly cookies
+- 🔐 **Cookie-based Authentication**: Secure authentication with CSRF protection
 - 💰 **Simulated Escrow**: Funds locked until delivery completion
 - 👥 **Dynamic User Roles**: Users can be both buyers and sellers
 - 📊 **Comprehensive API**: RESTful endpoints for all operations
 - 🛡️ **Security First**: Input validation, permissions, and error handling
+- 🐳 **Docker Ready**: Containerized for easy deployment
+- 🚀 **Cloud Deployed**: Live on Railway with PostgreSQL
 
 ## 📋 Table of Contents
 
 - [Business Logic](#business-logic)
 - [Tech Stack](#tech-stack)
+- [Live Demo](#live-demo)
 - [Project Structure](#project-structure)
 - [Data Models](#data-models)
 - [API Endpoints](#api-endpoints)
-- [Installation](#installation)
+- [Docker Deployment](#docker-deployment)
+- [Local Development](#local-development)
 - [Configuration](#configuration)
 - [Usage Examples](#usage-examples)
 - [Testing](#testing)
-- [Deployment](#deployment)
+- [Production Deployment](#production-deployment)
 - [Contributing](#contributing)
 
 ## 🎯 Business Logic
 
 ### Happy Path Flow
 
-1. **User Registration/Login** → JWT token issued
-2. **Buyer Creates Request** → Budget set, escrow locks funds (simulated)
+1. **User Registration/Login** → Session cookies and CSRF tokens issued
+2. **Buyer Creates Request** → Budget set, request posted for bidding
 3. **Sellers Browse Requests** → Submit competitive bids
-4. **Buyer Accepts Bid** → Request status changes to "accepted"
-5. **Seller Marks Delivered** → Buyer reviews delivery
-6. **Buyer Releases Funds** → Escrow updated, transaction complete
+4. **Buyer Creates Escrow** → Funds locked for accepted bid
+5. **Seller Marks Delivered** → Request status changes to "delivered"
+6. **Buyer Releases Funds** → Escrow released, transaction complete
 
 ### User Roles
 
 - **Dynamic Role System**: Users can act as both buyers and sellers
 - **Context-Based Permissions**: Role determined by action context
-- **Secure Operations**: All actions require proper authentication
+- **Secure Operations**: All actions require proper authentication and CSRF protection
 
 ## 🏛️ Tech Stack
 
@@ -58,16 +70,303 @@ Beiyangu is a reverse marketplace that flips the traditional e-commerce model. I
 
 - **Framework**: Django 4.2+ with Django REST Framework
 - **Database**: PostgreSQL 13+
-- **Authentication**: JWT (djangorestframework-simplejwt)
+- **Authentication**: Session-based with CSRF protection
 - **API Documentation**: Django REST Framework browsable API
 - **Code Quality**: pycodestyle and pydocstyle compliant
 
-### Development Tools
+### DevOps & Deployment
 
+- **Containerization**: Docker & Docker Compose
+- **Cloud Platform**: Railway
+- **Database**: Railway PostgreSQL
 - **Environment**: Python 3.8+
 - **Package Management**: pip with requirements.txt
+
+### Development Tools
+
 - **Testing**: Django TestCase and cURL validation
-- **Deployment**: Railway (configured)
+- **Code Quality**: Black, pycodestyle, pydocstyle
+- **Version Control**: Git with comprehensive documentation
+
+## 🌐 Live Demo
+
+The application is deployed and ready for testing:
+
+### Live API Endpoints
+
+```bash
+# Base URL
+https://beiyangu.up.railway.app/
+
+# Authentication
+https://beiyangu.up.railway.app/api/auth/register/
+https://beiyangu.up.railway.app/api/auth/login/
+
+# Requests
+https://beiyangu.up.railway.app/api/requests/
+https://beiyangu.up.railway.app/api/requests/my_requests/
+
+# Bids
+https://beiyangu.up.railway.app/api/requests/{id}/bids/
+https://beiyangu.up.railway.app/api/bids/
+
+# Escrow
+https://beiyangu.up.railway.app/api/escrow/
+https://beiyangu.up.railway.app/api/escrow/create_for_bid/
+
+# Dashboards
+https://beiyangu.up.railway.app/api/dashboard/buyer/
+https://beiyangu.up.railway.app/api/dashboard/seller/
+```
+
+### Quick Test
+
+```bash
+# Test the live API
+curl https://beiyangu.up.railway.app/api/requests/
+
+# Register a new user
+curl -X POST https://beiyangu.up.railway.app/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "testpass123",
+    "password_confirm": "testpass123"
+  }'
+```
+
+## 🛣️ API Endpoints
+
+### Authentication Endpoints
+
+#### User Registration
+
+```bash
+POST https://beiyangu.up.railway.app/api/auth/register/
+Content-Type: application/json
+
+{
+  "username": "buyer1",
+  "email": "buyer1@example.com",
+  "password": "buyerpassword123",
+  "password_confirm": "buyerpassword123",
+  "bio": "Optional bio",
+  "location": "Optional location"
+}
+```
+
+#### User Login (Cookie-based)
+
+```bash
+# Login and save cookies
+curl -X POST https://beiyangu.up.railway.app/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "buyer1@example.com",
+    "password": "buyerpassword123"
+  }' \
+  -c cookies.txt
+```
+
+#### Token Refresh
+
+```bash
+POST https://beiyangu.up.railway.app/api/auth/refresh/
+```
+
+#### User Logout
+
+```bash
+POST https://beiyangu.up.railway.app/api/auth/logout/
+```
+
+#### Get Current User Info
+
+```bash
+GET https://beiyangu.up.railway.app/api/auth/me/
+Cookie: sessionid=<session_id>
+```
+
+### Request Management
+
+#### List All Open Requests
+
+```bash
+# Get all requests (paginated)
+GET https://beiyangu.up.railway.app/api/requests/
+GET https://beiyangu.up.railway.app/api/requests/?page=2&page_size=10
+```
+
+#### Get User's Own Requests
+
+```bash
+GET https://beiyangu.up.railway.app/api/requests/my_requests/
+Cookie: sessionid=<session_id>
+```
+
+#### Create New Request
+
+```bash
+curl -X POST https://beiyangu.up.railway.app/api/requests/ \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "title": "Need website homepage design",
+    "description": "Landing page design for my startup",
+    "budget": "200.00",
+    "deadline": "2025-07-20",
+    "category": "1"
+  }' \
+  -b cookies.txt
+```
+
+#### Get Request Details
+
+```bash
+GET https://beiyangu.up.railway.app/api/requests/{id}/
+```
+
+#### Update Request Status
+
+```bash
+curl -X POST https://beiyangu.up.railway.app/api/requests/{id}/change_status/ \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "status": "delivered",
+    "notes": "Work completed by seller"
+  }'
+```
+
+#### Delete Request
+
+```bash
+DELETE https://beiyangu.up.railway.app/api/requests/{id}/
+Cookie: sessionid=<session_id>
+X-CSRFToken: <csrf_token>
+```
+
+### Bid Management
+
+#### List User's Bids
+
+```bash
+GET https://beiyangu.up.railway.app/api/bids/
+Cookie: sessionid=<session_id>
+```
+
+#### Submit Bid on Request
+
+```bash
+curl -X POST https://beiyangu.up.railway.app/api/requests/{request_id}/bids/ \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -d '{
+    "amount": "175.00",
+    "message": "I have 5 years of experience in web development and can deliver this project within the specified timeframe.",
+    "delivery_time": 10
+  }'
+```
+
+#### Update Bid
+
+```bash
+PUT https://beiyangu.up.railway.app/api/bids/{id}/
+Cookie: sessionid=<session_id>
+X-CSRFToken: <csrf_token>
+Content-Type: application/json
+
+{
+  "amount": "150.00",
+  "message": "Updated bid with better offer"
+}
+```
+
+#### Delete Bid
+
+```bash
+DELETE https://beiyangu.up.railway.app/api/bids/{id}/
+Cookie: sessionid=<session_id>
+X-CSRFToken: <csrf_token>
+```
+
+### Escrow Management
+
+#### List Escrow Transactions
+
+```bash
+curl -X GET https://beiyangu.up.railway.app/api/escrow/ \
+  -b cookies.txt \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)"
+```
+
+#### Create Escrow for Bid
+
+```bash
+curl -X POST https://beiyangu.up.railway.app/api/escrow/create_for_bid/ \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "bid_id": 2,
+    "payment_method": "credit_card",
+    "payment_details": {
+      "card_number": "****1234",
+      "card_type": "visa"
+    }
+  }'
+```
+
+#### Get Escrow Transaction Details
+
+```bash
+GET https://beiyangu.up.railway.app/api/escrow/{public_id}/
+Cookie: sessionid=<session_id>
+```
+
+#### Perform Escrow Action (Release/Hold)
+
+```bash
+curl -X POST https://beiyangu.up.railway.app/api/escrow/{public_id}/perform_action/ \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "action": "release",
+    "notes": "Work completed satisfactorily"
+  }'
+```
+
+#### Get Escrow Status
+
+```bash
+GET https://beiyangu.up.railway.app/api/escrow/{public_id}/status/
+Cookie: sessionid=<session_id>
+```
+
+### Dashboard Endpoints
+
+#### Buyer Dashboard
+
+```bash
+GET https://beiyangu.up.railway.app/api/dashboard/buyer/
+Cookie: sessionid=<session_id>
+```
+
+#### Seller Dashboard
+
+```bash
+GET https://beiyangu.up.railway.app/api/dashboard/seller/
+Cookie: sessionid=<session_id>
+```
 
 ## 📁 Project Structure
 
@@ -82,7 +381,7 @@ beiyangu-backend/
 │   │   ├── models.py        # User model extensions
 │   │   ├── views.py         # Auth endpoints
 │   │   └── serializers.py   # User serialization
-│   ├── requests/            # Buyer request management
+│   ├── user_requests/       # Buyer request management
 │   │   ├── models.py        # Request model
 │   │   ├── views.py         # Request CRUD endpoints
 │   │   └── serializers.py   # Request serialization
@@ -90,17 +389,188 @@ beiyangu-backend/
 │   │   ├── models.py        # Bid model
 │   │   ├── views.py         # Bid endpoints
 │   │   └── serializers.py   # Bid serialization
-│   └── escrow/              # Escrow transaction management
-│       ├── models.py        # EscrowTransaction model
-│       ├── views.py         # Escrow endpoints
-│       └── serializers.py   # Escrow serialization
+│   ├── escrow/              # Escrow transaction management
+│   │   ├── models.py        # EscrowTransaction model
+│   │   ├── views.py         # Escrow endpoints
+│   │   └── serializers.py   # Escrow serialization
+│   └── dashboard/           # Dashboard views
+│       ├── views.py         # Buyer/Seller dashboards
+│       └── serializers.py   # Dashboard serialization
 ├── core/                    # Shared utilities
 │   ├── permissions.py       # Custom permission classes
 │   ├── pagination.py        # Custom pagination
 │   └── utils.py             # Helper functions
+├── docker-compose.yml       # Docker Compose configuration
+├── Dockerfile              # Docker container configuration
 ├── requirements.txt         # Python dependencies
 ├── manage.py               # Django management script
 └── README.md               # This file
+```
+
+## 💡 Usage Examples
+
+### Complete Transaction Flow (Live API)
+
+```bash
+# 1. Register a buyer
+curl -X POST https://beiyangu.up.railway.app/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "buyer1",
+    "email": "buyer1@example.com",
+    "password": "buyerpassword123",
+    "password_confirm": "buyerpassword123"
+  }'
+
+# 2. Login and save cookies
+curl -X POST https://beiyangu.up.railway.app/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "buyer1@example.com",
+    "password": "buyerpassword123"
+  }' \
+  -c cookies.txt
+
+# 3. Create a request
+curl -X POST https://beiyangu.up.railway.app/api/requests/ \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "title": "Need website homepage design",
+    "description": "Landing page design for my startup",
+    "budget": "200.00",
+    "deadline": "2025-07-20",
+    "category": "1"
+  }' \
+  -b cookies.txt
+
+# 4. Register a seller
+curl -X POST https://beiyangu.up.railway.app/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "seller1",
+    "email": "seller1@example.com",
+    "password": "sellerpassword123",
+    "password_confirm": "sellerpassword123"
+  }'
+
+# 5. Seller login and save cookies
+curl -X POST https://beiyangu.up.railway.app/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "seller1@example.com",
+    "password": "sellerpassword123"
+  }' \
+  -c seller_cookies.txt
+
+# 6. Seller bids on request
+curl -X POST https://beiyangu.up.railway.app/api/requests/1/bids/ \
+  -b seller_cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -H "X-CSRFToken: $(grep csrftoken seller_cookies.txt | cut -f7)" \
+  -d '{
+    "amount": "175.00",
+    "message": "I have 5 years of experience in web development and can deliver this project within the specified timeframe.",
+    "delivery_time": 10
+  }'
+
+# 7. Buyer creates escrow for accepted bid
+curl -X POST https://beiyangu.up.railway.app/api/escrow/create_for_bid/ \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "bid_id": 2,
+    "payment_method": "credit_card",
+    "payment_details": {
+      "card_number": "****1234",
+      "card_type": "visa"
+    }
+  }'
+
+# 8. Seller marks work as delivered
+curl -X POST https://beiyangu.up.railway.app/api/requests/1/change_status/ \
+  -b seller_cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken seller_cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "status": "delivered",
+    "notes": "Work completed by seller"
+  }'
+
+# 9. Get escrow transaction ID
+curl -X GET https://beiyangu.up.railway.app/api/escrow/ \
+  -b cookies.txt \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)"
+
+# 10. Buyer releases funds
+curl -X POST https://beiyangu.up.railway.app/api/escrow/{escrow_public_id}/perform_action/ \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: $(grep csrftoken cookies.txt | cut -f7)" \
+  -H "Referer: https://beiyangu.up.railway.app" \
+  -d '{
+    "action": "release",
+    "notes": "Work completed satisfactorily"
+  }'
+```
+
+### Dashboard Examples
+
+```bash
+# Get buyer dashboard
+curl -X GET https://beiyangu.up.railway.app/api/dashboard/buyer/ \
+  -b cookies.txt
+
+# Get seller dashboard
+curl -X GET https://beiyangu.up.railway.app/api/dashboard/seller/ \
+  -b cookies.txt
+
+# Get user's requests
+curl -X GET https://beiyangu.up.railway.app/api/requests/my_requests/ \
+  -b cookies.txt
+
+# Get user's bids
+curl -X GET https://beiyangu.up.railway.app/api/bids/ \
+  -b cookies.txt
+```
+
+## 🔑 Authentication Notes
+
+### Cookie-based Authentication
+
+The API uses Django's session-based authentication with CSRF protection:
+
+1. **Login**: Returns session cookies and CSRF token
+2. **Subsequent Requests**: Include cookies and CSRF token in headers
+3. **CSRF Protection**: All POST/PUT/DELETE requests require CSRF token
+
+### Required Headers for Protected Endpoints
+
+```bash
+# Required for all authenticated requests
+Cookie: sessionid=<session_id>; csrftoken=<csrf_token>
+
+# Required for POST/PUT/DELETE requests
+X-CSRFToken: <csrf_token>
+Referer: https://beiyangu.up.railway.app
+```
+
+### Cookie Management
+
+```bash
+# Save cookies during login
+curl -c cookies.txt ...
+
+# Use cookies in subsequent requests
+curl -b cookies.txt ...
+
+# Extract CSRF token from cookies
+grep csrftoken cookies.txt | cut -f7
 ```
 
 ## 📊 Data Models
@@ -130,6 +600,8 @@ class Request(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     budget = models.DecimalField(max_digits=10, decimal_places=2)
+    deadline = models.DateField()
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
     buyer = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -145,6 +617,7 @@ class Bid(models.Model):
     seller = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     message = models.TextField()
+    delivery_time = models.IntegerField()  # days
     is_accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -162,189 +635,196 @@ class EscrowTransaction(models.Model):
         ('released', 'Released'),
         ('held', 'Held for Dispute'),
     ]
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True)
     request = models.OneToOneField(Request, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=50)
+    payment_details = models.JSONField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='locked')
     created_at = models.DateTimeField(auto_now_add=True)
     released_at = models.DateTimeField(null=True, blank=True)
 ```
 
-## 🛣️ API Endpoints
+## 🧪 Testing
 
-### Authentication Endpoints
-
-```bash
-# User registration
-POST /api/auth/register/
-Content-Type: application/json
-{
-  "username": "user123",
-  "email": "user@example.com",
-  "password": "securepassword123",
-  "bio": "Optional bio",
-  "location": "Optional location"
-}
-
-# User login (returns JWT in httpOnly cookie)
-POST /api/auth/login/
-Content-Type: application/json
-{
-  "username": "user123",
-  "password": "securepassword123"
-}
-
-# Token refresh
-POST /api/auth/refresh/
-
-# User logout (clear cookies)
-POST /api/auth/logout/
-
-# Get current user info
-GET /api/auth/me/
-Authorization: Bearer <token>
-```
-
-### Request Management
+### Running Tests
 
 ```bash
-# List all open requests (paginated)
-GET /api/requests/
-GET /api/requests/?page=2&page_size=10
+# Local testing
+python manage.py test
 
-# Create new request (buyer only)
-POST /api/requests/
-Authorization: Bearer <token>
-Content-Type: application/json
-{
-  "title": "Need a logo design",
-  "description": "Looking for a modern logo for my startup",
-  "budget": "500.00"
-}
+# Docker testing
+docker-compose exec web python manage.py test
 
-# Get request details with bids
-GET /api/requests/{id}/
+# Run tests for specific app
+python manage.py test apps.users
+python manage.py test apps.user_requests
+python manage.py test apps.bids
+python manage.py test apps.escrow
 
-# Update request (owner only)
-PUT /api/requests/{id}/
-Authorization: Bearer <token>
-
-# Delete request (owner only, if no bids)
-DELETE /api/requests/{id}/
-Authorization: Bearer <token>
-
-# Mark as delivered (accepted seller only)
-POST /api/requests/{id}/deliver/
-Authorization: Bearer <token>
-
-# Release funds (buyer only)
-POST /api/requests/{id}/release/
-Authorization: Bearer <token>
+# Run tests with coverage
+pip install coverage
+coverage run manage.py test
+coverage report
+coverage html  # Generate HTML coverage report
 ```
 
-### Bid Management
+### Live API Testing
+
+Test the live API endpoints:
 
 ```bash
-# List user's bids
-GET /api/bids/
-Authorization: Bearer <token>
+# Test live API health
+curl https://beiyangu.up.railway.app/api/requests/
 
-# Submit bid on request
-POST /api/requests/{id}/bids/
-Authorization: Bearer <token>
-Content-Type: application/json
-{
-  "amount": "450.00",
-  "message": "I can deliver this within 3 days"
-}
-
-# Update bid (owner only, if not accepted)
-PUT /api/bids/{id}/
-Authorization: Bearer <token>
-
-# Delete bid (owner only, if not accepted)
-DELETE /api/bids/{id}/
-Authorization: Bearer <token>
-
-# Accept bid (request owner only)
-POST /api/bids/{id}/accept/
-Authorization: Bearer <token>
+# Test authentication
+curl -X POST https://beiyangu.up.railway.app/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser_' $(date +%s) '",
+    "email": "test' $(date +%s) '@example.com",
+    "password": "testpass123",
+    "password_confirm": "testpass123"
+  }'
 ```
 
-### Dashboard Endpoints
+## 🐳 Docker Deployment
+
+The application is fully containerized using Docker for easy deployment and development.
+
+### Docker Configuration
+
+**Dockerfile**
+
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+```
+
+**docker-compose.yml**
+
+```yaml
+version: "3.8"
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://user:password@db:5432/beiyangu
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=beiyangu
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+### Running with Docker
 
 ```bash
-# Buyer dashboard (my requests + received bids)
-GET /api/dashboard/buyer/
-Authorization: Bearer <token>
+# Build and run with Docker Compose
+docker-compose up --build
 
-# Seller dashboard (available requests + my bids)
-GET /api/dashboard/seller/
-Authorization: Bearer <token>
+# Run in detached mode
+docker-compose up -d
+
+# Stop the containers
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Run migrations
+docker-compose exec web python manage.py migrate
+
+# Create superuser
+docker-compose exec web python manage.py createsuperuser
 ```
 
-## 🚀 Installation
+## 🚀 Local Development
 
 ### Prerequisites
 
 - Python 3.8 or higher
-- PostgreSQL 13 or higher
+- PostgreSQL 13 or higher (or Docker)
 - pip (Python package manager)
 
-### Local Development Setup
+### Setup Options
 
-1. **Clone the repository**
+#### Option 1: Docker (Recommended)
 
-   ```bash
-   git clone https://github.com/M0imaritim/Beiyangu_backend.git
-   cd Beiyangu_backend
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/M0imaritim/Beiyangu_backend.git
+cd Beiyangu_backend
 
-2. **Create and activate virtual environment**
+# Run with Docker
+docker-compose up --build
 
-   ```bash
-   python -m venv venv
+# The API will be available at http://localhost:8000
+```
 
-   # On Windows
-   venv\Scripts\activate
+#### Option 2: Local Development
 
-   # On macOS/Linux
-   source venv/bin/activate
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/M0imaritim/Beiyangu_backend.git
+cd Beiyangu_backend
 
-3. **Install dependencies**
+# Create and activate virtual environment
+python -m venv venv
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+# On Windows
+venv\Scripts\activate
 
-4. **Set up environment variables**
+# On macOS/Linux
+source venv/bin/activate
 
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-5. **Set up PostgreSQL database**
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
 
-   ```bash
-   # Create database
-   createdb beiyangu_dev
+# Set up PostgreSQL database
+createdb beiyangu_dev
 
-   # Run migrations
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
+# Run migrations
+python manage.py makemigrations
+python manage.py migrate
 
-6. **Create superuser (optional)**
+# Create superuser (optional)
+python manage.py createsuperuser
 
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-7. **Start the development server**
-   ```bash
-   python manage.py runserver
-   ```
+# Start the development server
+python manage.py runserver
+```
 
 The API will be available at `http://127.0.0.1:8000/`
 
@@ -358,7 +838,7 @@ Create a `.env` file in the project root:
 # Django Configuration
 SECRET_KEY=your-super-secret-django-key-here
 DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
+ALLOWED_HOSTS=localhost,127.0.0.1,beiyangu.up.railway.app
 
 # Database Configuration
 DATABASE_URL=postgresql://username:password@localhost:5432/beiyangu_dev
@@ -368,15 +848,9 @@ DB_PASSWORD=your_db_password
 DB_HOST=localhost
 DB_PORT=5432
 
-# JWT Configuration
-JWT_SECRET_KEY=your-jwt-secret-key
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_LIFETIME=60  # minutes
-JWT_REFRESH_TOKEN_LIFETIME=1440  # minutes (24 hours)
-
 # Security Settings
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://beiyangu.up.railway.app
+CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://beiyangu.up.railway.app
 
 # Email Configuration (optional)
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
@@ -385,132 +859,21 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password
+
+# Railway Configuration (Production)
+RAILWAY_STATIC_URL=https://beiyangu.up.railway.app/static/
+RAILWAY_ENVIRONMENT=production
 ```
 
-### Database Configuration
+## 🚀 Production Deployment
 
-For PostgreSQL (recommended):
+### Railway Deployment (Current)
 
-```python
-# settings.py
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT'),
-    }
-}
-```
+The application is deployed on Railway with the following configuration:
 
-## 💡 Usage Examples
+**Live URL**: [https://beiyangu.up.railway.app/](https://beiyangu.up.railway.app/)
 
-### Complete Transaction Flow (cURL)
-
-```bash
-# 1. Register a buyer
-curl -X POST http://127.0.0.1:8000/api/auth/register/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "buyer1",
-    "email": "buyer@example.com",
-    "password": "securepass123",
-    "bio": "Looking for quality services"
-  }'
-
-# 2. Login and get token
-curl -X POST http://127.0.0.1:8000/api/auth/login/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "buyer1",
-    "password": "securepass123"
-  }'
-
-# 3. Create a request (use token from login)
-curl -X POST http://127.0.0.1:8000/api/requests/ \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Need a website built",
-    "description": "Looking for a responsive website for my business",
-    "budget": "1500.00"
-  }'
-
-# 4. Register a seller
-curl -X POST http://127.0.0.1:8000/api/auth/register/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "seller1",
-    "email": "seller@example.com",
-    "password": "securepass123",
-    "bio": "Professional web developer"
-  }'
-
-# 5. Seller bids on request
-curl -X POST http://127.0.0.1:8000/api/requests/1/bids/ \
-  -H "Authorization: Bearer SELLER_TOKEN_HERE" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": "1200.00",
-    "message": "I can build a modern, responsive website within 2 weeks"
-  }'
-
-# 6. Buyer accepts bid
-curl -X POST http://127.0.0.1:8000/api/bids/1/accept/ \
-  -H "Authorization: Bearer BUYER_TOKEN_HERE"
-
-# 7. Seller marks as delivered
-curl -X POST http://127.0.0.1:8000/api/requests/1/deliver/ \
-  -H "Authorization: Bearer SELLER_TOKEN_HERE"
-
-# 8. Buyer releases funds
-curl -X POST http://127.0.0.1:8000/api/requests/1/release/ \
-  -H "Authorization: Bearer BUYER_TOKEN_HERE"
-```
-
-## 🧪 Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-python manage.py test
-
-# Run tests for specific app
-python manage.py test apps.users
-python manage.py test apps.requests
-python manage.py test apps.bids
-python manage.py test apps.escrow
-
-# Run tests with coverage
-pip install coverage
-coverage run manage.py test
-coverage report
-coverage html  # Generate HTML coverage report
-```
-
-### API Testing with cURL
-
-The project includes comprehensive cURL testing examples. All endpoints have been validated using cURL commands to ensure proper functionality.
-
-### Test Data Creation
-
-```bash
-# Create test users and data
-python manage.py shell
->>> from django.contrib.auth.models import User
->>> from apps.requests.models import Request
->>> from apps.bids.models import Bid
->>> # Create test data programmatically
-```
-
-## 🚀 Deployment
-
-### Railway Deployment
-
-The project is configured for Railway deployment:
+#### Railway Setup
 
 1. **Connect Repository**
 
@@ -525,17 +888,32 @@ The project is configured for Railway deployment:
    Set production environment variables in Railway dashboard:
 
    - `SECRET_KEY`
-   - `DATABASE_URL`
-   - `ALLOWED_HOSTS`
+   - `DATABASE_URL` (provided by Railway PostgreSQL)
+   - `ALLOWED_HOSTS=beiyangu.up.railway.app`
    - `DEBUG=False`
+   - `RAILWAY_ENVIRONMENT=production`
 
-3. **Database Migration**
+3. **Database Setup**
    ```bash
+   # Railway automatically provisions PostgreSQL
+   # Run migrations
    railway run python manage.py migrate
    railway run python manage.py createsuperuser
    ```
 
-### Manual Deployment
+### Alternative Deployment Options
+
+#### Docker Deployment
+
+```bash
+# Build for production
+docker build -t beiyangu-backend .
+
+# Run with production settings
+docker run -e DEBUG=False -e DATABASE_URL=your_db_url -p 8000:8000 beiyangu-backend
+```
+
+#### Manual Deployment
 
 For other platforms:
 
@@ -551,6 +929,7 @@ For other platforms:
    export SECRET_KEY="your-secret-key"
    export DATABASE_URL="postgresql://..."
    export DEBUG=False
+   export ALLOWED_HOSTS="your-domain.com"
    ```
 
 3. **Run migrations**
@@ -565,7 +944,7 @@ For other platforms:
    gunicorn beiyangu.wsgi:application --bind 0.0.0.0:8000
    ```
 
-## 📝 API Response Format
+## 📝 API Response
 
 ### Success Response
 
